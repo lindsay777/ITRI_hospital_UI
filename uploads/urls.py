@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 from uploads.core import views
 
-
+# 把url 跟views串起來!!
 urlpatterns = [
     url(r'^$', views.home, name='home'),
     url(r'^uploads/simple/$', views.simple_upload, name='simple_upload'),
@@ -14,4 +14,5 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

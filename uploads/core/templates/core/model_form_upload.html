@@ -2,8 +2,8 @@
 
 {% block content %}
   <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
+    {% csrf_token %} <!-- cross site request forgery protection 防止別的網站對站台作攻擊-->
+    {{ form.as_p }} <!-- 用這個 method 把 form 給 render 出來 -->
     <button type="submit">Upload</button>
   </form>
 
