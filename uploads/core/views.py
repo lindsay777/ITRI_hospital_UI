@@ -15,21 +15,20 @@ def home(request):
     documents = Document.objects.all()
     return render(request, 'core/home.html', { 'documents': documents })
 
-
 def simple_upload(request):
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         filename = fs.save(myfile.name, myfile)
 
-        os.chdir('C:/Users/Lindsay/Desktop/0807_v3/simple-file-upload/media')
-        dir_path = os.path.dirname(os.path.realpath(__file__))
+        print(os.getcwd())
 
         zscore=[]
         report = ''
 
         if filename.startswith('STR00000'):
-            dataset = pydicom.dcmread(myfile.name)
+            
+            dataset = pydicom.dcmread('media/' + myfile.name)
             str1 = dataset.ImageComments
             str2 = str1.split('><')
             match_zscore = [s for s in str2 if "BMD_ZSCORE" in s]
@@ -42,7 +41,8 @@ def simple_upload(request):
             print(zscore)
 
         elif filename.startswith('IMG00000'):
-            dataset = pydicom.dcmread(myfile.name)
+    
+            dataset = pydicom.dcmread('media/' + myfile.name)
             if 'PixelData' in dataset:
                 rows = int(dataset.Rows)
                 cols = int(dataset.Columns)
@@ -52,8 +52,8 @@ def simple_upload(request):
                     print("Pixel spacing....:", dataset.PixelSpacing)
 
             
-            if cv2.imwrite('C:/Users/Lindsay/Desktop/0807_v3/simple-file-upload/media/report.jpg', dataset.pixel_array):
-                report = 'C:/Users/Lindsay/Desktop/0807_v3/simple-file-upload/media/report.jpg'
+            if cv2.imwrite('media/report.jpg', dataset.pixel_array):
+                report = 'media/report.jpg'
                 print(report)
 
 
