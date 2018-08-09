@@ -22,14 +22,10 @@ def simple_upload(request):
         filename = fs.save(myfile.name, myfile)
 
         # create uniqe name for saving reports
-        reportname_list = list(filename)
-        reportname_list = reportname_list[:-4]
-        print(reportname_list)
+        # remove '.dcm' 
+        reportname_list = list(filename)[:-4]
         reportname = ''.join(reportname_list)
-        print(reportname)
-
-        print(os.getcwd())
-
+        
         zscore=[]
         tscore=[]
         report = ''
@@ -40,66 +36,43 @@ def simple_upload(request):
         pid = dataset.PatientID
         # get sex
         sex = dataset.PatientSex
-        print(sex)
-        # get age
-        age = dataset.PatientAge
-        age_list = list(age)
+        # get age (ex. 063Y->63)
+        age_list = list(dataset.PatientAge)
         del age_list[-1]
         if age_list[0]=='0':
             del age_list[0]
         age = ''.join(age_list)
-        print(age)
         # get MP
-        name = dataset.PatientName
-        temp = str(name)
-        if "(PM" in temp:
-            temp = temp.split('(')[1]
-            temp = temp.split(')')[0]
-            temp_list = list(temp)
-            del temp_list[0:2]
-            mp = ''.join(temp_list)
-        print(mp)
+        name = str(dataset.PatientName)
+        if "(PM" in name:
+            name = name.split('(')[1].split(')')[0]
+            name_list = list(name)
+            del name_list[0:2]
+            mp = ''.join(name_list)
 
-        # Judge from filename, get value or image
+        #----- Judge from filename, get value or image -----
+        # get value
         if filename.startswith('STR'):
-            str1 = dataset.ImageComments
-            str2 = str1.split('><')
+            imageComments = dataset.ImageComments.split('><')
             # get zscore
-            match_zscore = [s for s in str2 if "BMD_ZSCORE" in s]
+            match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
             for substring in match_zscore:
-                substring = substring.split('</')[0]
-                substring = substring.split('>')[1]
+                substring = substring.split('</')[0].split('>')[1]
                 zscore.append(substring)
-            print(zscore)
 
             # get tscore
-            match_tscore = [s for s in str2 if "BMD_TSCORE" in s]
+            match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
             for substring in match_tscore:
-                substring = substring.split('</')[0]
-                substring = substring.split('>')[1]
+                substring = substring.split('</')[0].split('>')[1]
                 tscore.append(substring)
-            print(tscore)
 
-
+        # get image
         elif filename.startswith('IMG'):
-            # get image
-            print("get image")
-            rows = int(dataset.Rows)
-            cols = int(dataset.Columns)
-            print("Image size.......: {rows:d} x {cols:d}, {size:d} bytes".format(
-                rows=rows, cols=cols, size=len(dataset.PixelData)))
-            if 'PixelSpacing' in dataset:
-                print("Pixel spacing....:", dataset.PixelSpacing)
-
             
-            # if cv2.imwrite('/media/'+reportname+'_report.jpg', dataset.pixel_array):
-            #     print('cv2!!')
-            #     report = '/media/'+reportname+'_report.jpg'
-            #     print('report: '+ report)
+            # pydicom example: https://goo.gl/SMyny4
+    
             if cv2.imwrite('media/' + reportname + '_report.jpg', dataset.pixel_array):
                 report = '/media/' + reportname + '_report.jpg'
-                print(report)
-
 
         uploaded_file_url = fs.url(filename)
         return render(request, 'core/simple_upload.html', {
@@ -112,6 +85,7 @@ def simple_upload(request):
             'tscore': tscore,
             'report': report,
         })
+
     return render(request, 'core/simple_upload.html')
 
 
