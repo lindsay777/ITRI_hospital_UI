@@ -36,6 +36,8 @@ def simple_upload(request):
 
         dataset = pydicom.dcmread('media/' + myfile.name)
 
+        # get patient's ID
+        pid = dataset.PatientID
         # get sex
         sex = dataset.PatientSex
         print(sex)
@@ -95,13 +97,14 @@ def simple_upload(request):
             #     report = '/media/'+reportname+'_report.jpg'
             #     print('report: '+ report)
             if cv2.imwrite('media/' + reportname + '_report.jpg', dataset.pixel_array):
-                report = 'media/' + reportname + '_report.jpg'
+                report = '/media/' + reportname + '_report.jpg'
                 print(report)
 
 
         uploaded_file_url = fs.url(filename)
         return render(request, 'core/simple_upload.html', {
             'uploaded_file_url': uploaded_file_url,
+            'pid': pid,
             'sex': sex,
             'age': age,
             'mp': mp,
