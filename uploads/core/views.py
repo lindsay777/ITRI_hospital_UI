@@ -21,46 +21,92 @@ def simple_upload(request):
         fs = FileSystemStorage()
         filename = fs.save(myfile.name, myfile)
 
+        # create uniqe name for saving reports
+        reportname_list = list(filename)
+        reportname_list = reportname_list[:-4]
+        print(reportname_list)
+        reportname = ''.join(reportname_list)
+        print(reportname)
+
         print(os.getcwd())
 
         zscore=[]
+        tscore=[]
         report = ''
 
-        if filename.startswith('STR00000'):
-            
-            dataset = pydicom.dcmread('media/' + myfile.name)
+        dataset = pydicom.dcmread('media/' + myfile.name)
+
+        # get sex
+        sex = dataset.PatientSex
+        print(sex)
+        # get age
+        age = dataset.PatientAge
+        age_list = list(age)
+        del age_list[-1]
+        if age_list[0]=='0':
+            del age_list[0]
+        age = ''.join(age_list)
+        print(age)
+        # get MP
+        name = dataset.PatientName
+        temp = str(name)
+        if "(PM" in temp:
+            temp = temp.split('(')[1]
+            temp = temp.split(')')[0]
+            temp_list = list(temp)
+            del temp_list[0:2]
+            mp = ''.join(temp_list)
+        print(mp)
+
+        # Judge from filename, get value or image
+        if filename.startswith('STR'):
             str1 = dataset.ImageComments
             str2 = str1.split('><')
+            # get zscore
             match_zscore = [s for s in str2 if "BMD_ZSCORE" in s]
-            #fo = open('filename.txt', 'w')
             for substring in match_zscore:
                 substring = substring.split('</')[0]
                 substring = substring.split('>')[1]
                 zscore.append(substring)
-            #fo.write(zscore)
             print(zscore)
 
-        elif filename.startswith('IMG00000'):
-    
-            dataset = pydicom.dcmread('media/' + myfile.name)
-            if 'PixelData' in dataset:
-                rows = int(dataset.Rows)
-                cols = int(dataset.Columns)
-                print("Image size.......: {rows:d} x {cols:d}, {size:d} bytes".format(
-                    rows=rows, cols=cols, size=len(dataset.PixelData)))
-                if 'PixelSpacing' in dataset:
-                    print("Pixel spacing....:", dataset.PixelSpacing)
+            # get tscore
+            match_tscore = [s for s in str2 if "BMD_TSCORE" in s]
+            for substring in match_tscore:
+                substring = substring.split('</')[0]
+                substring = substring.split('>')[1]
+                tscore.append(substring)
+            print(tscore)
+
+
+        elif filename.startswith('IMG'):
+            # get image
+            print("get image")
+            rows = int(dataset.Rows)
+            cols = int(dataset.Columns)
+            print("Image size.......: {rows:d} x {cols:d}, {size:d} bytes".format(
+                rows=rows, cols=cols, size=len(dataset.PixelData)))
+            if 'PixelSpacing' in dataset:
+                print("Pixel spacing....:", dataset.PixelSpacing)
 
             
-            if cv2.imwrite('media/report.jpg', dataset.pixel_array):
-                report = 'media/report.jpg'
+            # if cv2.imwrite('/media/'+reportname+'_report.jpg', dataset.pixel_array):
+            #     print('cv2!!')
+            #     report = '/media/'+reportname+'_report.jpg'
+            #     print('report: '+ report)
+            if cv2.imwrite('media/' + reportname + '_report.jpg', dataset.pixel_array):
+                report = 'media/' + reportname + '_report.jpg'
                 print(report)
 
 
         uploaded_file_url = fs.url(filename)
         return render(request, 'core/simple_upload.html', {
             'uploaded_file_url': uploaded_file_url,
+            'sex': sex,
+            'age': age,
+            'mp': mp,
             'zscore': zscore,
+            'tscore': tscore,
             'report': report,
         })
     return render(request, 'core/simple_upload.html')
