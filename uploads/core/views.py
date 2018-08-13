@@ -108,8 +108,171 @@ def simple_upload(request):
     return render(request, 'core/simple_upload.html')
 
 
+def upload_dcm(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        fileName = fs.save(myfile.name, myfile)
+        print('filename:' + fileName)
+        print(os.getcwd())
+        filePath = 'media/' + fileName
+        print('filepath' + filePath)
 
+        # read file
+        dataset = pydicom.dcmread(filePath) 
 
+        # get patient's ID
+        pid = dataset.PatientID
+
+        # get sex
+        sex = dataset.PatientSex
+
+        # get age (ex. 063Y->63)
+        age_list = list(dataset.PatientAge)
+        del age_list[-1]
+        if age_list[0]=='0':
+            del age_list[0]
+        age = ''.join(age_list)
+
+        # get MP
+        name = str(dataset.PatientName)
+        if "(PM" in name:
+            name = name.split('(')[1].split(')')[0]
+            name_list = list(name)
+            del name_list[0:2]
+            mp = ''.join(name_list)
+
+        #----- get image report from file IMG00000 -----  
+        # get image and save to report
+        # pydicom example: https://goo.gl/SMyny4
+        report = ''
+        zscore=[]
+        tscore=[]
+        if fileName.startswith('IMG00000'):
+            if cv2.imwrite('media/IMG00000_report.jpg', dataset.pixel_array):
+                report = '/media/IMG00000_report.jpg'
+
+        #----- get zscore, tscore from file STR00000 -----
+        # read STR00000
+        elif fileName.startswith('STR00000'):       
+            imageComments = dataset.ImageComments.split('><')
+
+            # get zscore
+            match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
+            for substring in match_zscore:
+                substring = substring.split('</')[0].split('>')[1]
+                zscore.append(substring)
+
+            # get tscore
+            match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
+            for substring in match_tscore:
+                substring = substring.split('</')[0].split('>')[1]
+                tscore.append(substring)
+
+        uploaded_file_url = fs.url(fileName)
+        return render(request, 'core/simple_upload.html', {
+            'uploaded_file_url': uploaded_file_url,
+            'pid': pid,
+            'sex': sex,
+            'age': age,
+            'mp': mp,
+            'zscore': zscore,
+            'tscore': tscore,
+            'report': report,
+        })
+
+    return render(request, 'core/simple_upload.html')
+
+def upload_zip(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        zipFileName = fs.save(myfile.name, myfile)
+
+        # read zip file
+        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', zipFileName))
+
+        # create a folder with a uniqe name same as the zip file
+        folderNameList = list(zipFileName)[:-4] #remove '.zip'
+        folderName = ''.join(folderNameList)
+        folderPath = 'media/' + folderName
+
+        # extract zip file to the folder created
+        for file in zip_file.namelist():
+            zip_file.extract(file, os.path.join(os.getcwd(), folderPath))
+
+        # get .dcm files from the zip folder
+        zip_list = zip_file.namelist()
+        lstFilesDCM = []
+        for file_name in zip_list:
+            if ".dcm" in file_name.lower():
+                lstFilesDCM.append(os.path.join(os.getcwd(), folderPath, file_name))
+        print(lstFilesDCM[0] + '\n')
+
+        # read IMG00000
+        dataset = pydicom.dcmread(lstFilesDCM[0]) 
+
+        # get patient's ID
+        pid = dataset.PatientID
+
+        # get sex
+        sex = dataset.PatientSex
+
+        # get age (ex. 063Y->63)
+        age_list = list(dataset.PatientAge)
+        del age_list[-1]
+        if age_list[0]=='0':
+            del age_list[0]
+        age = ''.join(age_list)
+
+        # get MP
+        name = str(dataset.PatientName)
+        if "(PM" in name:
+            name = name.split('(')[1].split(')')[0]
+            name_list = list(name)
+            del name_list[0:2]
+            mp = ''.join(name_list)
+
+        #----- get image report from file IMG00000 -----  
+        # get image and save to report
+        # pydicom example: https://goo.gl/SMyny4
+        report = ''
+        if cv2.imwrite(folderPath + '/IMG00000_report.jpg', dataset.pixel_array):
+            report = '/' + folderPath + '/IMG00000_report.jpg'
+
+        #----- get zscore, tscore from file STR00000 -----
+        # read STR00000
+        dataset = pydicom.dcmread(lstFilesDCM[5])  
+
+        zscore=[]
+        tscore=[]
+        imageComments = dataset.ImageComments.split('><')
+
+        # get zscore
+        match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
+        for substring in match_zscore:
+            substring = substring.split('</')[0].split('>')[1]
+            zscore.append(substring)
+
+        # get tscore
+        match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
+        for substring in match_tscore:
+            substring = substring.split('</')[0].split('>')[1]
+            tscore.append(substring)
+
+        uploaded_file_url = fs.url(zipFileName)
+        return render(request, 'core/simple_upload.html', {
+            'uploaded_file_url': uploaded_file_url,
+            'pid': pid,
+            'sex': sex,
+            'age': age,
+            'mp': mp,
+            'zscore': zscore,
+            'tscore': tscore,
+            'report': report,
+        })
+
+    return render(request, 'core/simple_upload.html')
 
 # 在view裡面可以使用form
 # 定義一個view 透過request把資料POST到request.POST當中
