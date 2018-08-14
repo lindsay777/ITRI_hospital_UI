@@ -348,3 +348,16 @@ def show_dcm(request):
     })
 
     return render(request, 'core/show_dcm.html')
+
+def manage_zip(request):
+
+    folderPath = 'media/ZIP/'
+
+    # list files in the folder
+    onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+
+    return render(request, 'core/manage_zip.html', {
+        'onlyfiles': onlyfiles,
+    })
+
+    return render(request, 'core/manage_zip.html')
