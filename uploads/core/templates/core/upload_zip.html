@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="myfile">
+    <button type="submit">Upload</button>
+  </form>
+
+  {% if uploaded_file_url %}
+    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+
+    <li>zipFileName: {{ zipFileName }}</li>
+    <li>zipFilePath: {{ zipFilePath }}</li>
+    <li>dir_tree:</li>
+    
+    {% for dir in dir_tree %}
+      <div>
+        {{ dir }}
+      </div>
+    {% endfor %}
+
+  {% endif %}
+
+  <p><a href="{% url 'home' %}">Return to home</a></p>
+{% endblock %}
+
+
+<!--
+  upload single dcm姑且式做完了ㄅ 哦哦 
+  那應該試著 zip 後 點 dcm 能夠跳出原本分析的畫面那樣? 
+  或是做 列出所有dcm 然後點了 可以又跳到分析畫面 
+  你是指點不同dcm可以跳不同畫面顯示資訊嘛 
+  還是在列出所有dcm的地方順便列出全部的資訊 
+  因為像是zscore tscore 只有在STR00000才有 
+  STR00001還會有別的資訊 那就得判斷拉~ 
+  我覺得點了換個畫面現階段好像比較簡單 
+  不過ajax 應該不難R (就是在同個葉面不換哦哦 等等
+
+  總之概念就是 在前端那邊用 jquery 去 call 某個網址?
+  然後後端區處理 在回傳個啥 然後jquery收到 把資料串在某個地方甚麼的
+
+  嘛~ 我覺得直接無腦煥業! 
+  應該說 你先做出列出所有檔案的葉面 
+  然後能夠從選的檔案  一路往後點想要的 然後伊直喚葉XDD
+-->
