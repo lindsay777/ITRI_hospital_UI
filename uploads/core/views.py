@@ -200,7 +200,6 @@ def upload_zip(request):
 
         # move file form media/ to media/dcm/ folder
         shutil.move('media/'+zipFileName, 'media/ZIP/'+zipFileName)
-        #zipFilePath = 'media/ZIP/' + zipFileName
 
         # read zip file
         zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', zipFileName))
@@ -264,17 +263,11 @@ def model_form_upload(request):
 def manage_dcm(request):
 
     folderPath = 'media/DCM/'
-    print('folderPath:' + folderPath)
-    print(os.getcwd())
 
+    # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-    print(onlyfiles)
 
-    # # read file
-    # dataset = pydicom.dcmread(dcmFilePath) 
-    #uploaded_file_url = fs.url(fileName)
     return render(request, 'core/manage_dcm.html', {
-        # 'uploaded_file_url': uploaded_file_url,
         'onlyfiles': onlyfiles,
     })
 
@@ -282,16 +275,16 @@ def manage_dcm(request):
 
 def show_dcm(request):
     print(os.getcwd())
-    
+
+    # get the fileName user clicked from template
     fileName = request.GET.get('file', None)
+
     # fileName / filePath preprocess
     filePath = 'media/DCM/' + fileName
     fileName = list(fileName)[:-4] #remove '.dcm'
     fileName = ''.join(fileName)
     print('fileName: ' + fileName)
     print('filePath: ' + filePath)
-
-    
 
     # read file
     dataset = pydicom.dcmread(filePath) 
@@ -345,7 +338,6 @@ def show_dcm(request):
 
     # uploaded_file_url = fs.url(zipFileName)
     return render(request, 'core/show_dcm.html', {
-        # 'uploaded_file_url': uploaded_file_url,
         'pid': pid,
         'sex': sex,
         'age': age,
