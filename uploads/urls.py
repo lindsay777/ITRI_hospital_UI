@@ -12,7 +12,9 @@ urlpatterns = [
     url(r'^uploads/uploadDCM/$', views.upload_dcm, name='upload_dcm'),
     url(r'^uploads/uploadZIP/$', views.upload_zip, name='upload_zip'),
     url(r'^uploads/form/$', views.model_form_upload, name='model_form_upload'),
-    # url(r'^uploads/form/$', views.manage_dcm, name='manage_dcm'),
+    url(r'^uploads/manageDCM/$', views.manage_dcm, name='manage_dcm'),
+    url(r'^uploads/showDCM/(?P<file>)/$', views.show_dcm, name='show_dcm'),
+    url(r'^uploads/showDCM/$', views.show_dcm, name='show_dcm'),
     # url(r'^uploads/form/$', views.manage_zip, name='manage_zip'),
     url(r'^admin/', admin.site.urls),
 ]
