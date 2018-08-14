@@ -5,20 +5,20 @@
 {% block content %}
 
 
-  {% if uploaded_file_url %}
-    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+  
+  <!--<p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>-->
 
-    <li>id: {{ pid }}</li>
-    <li>sex: {{ sex }}</li>
-    <li>age: {{ age }}</li>
-    <li>mp: {{ mp }}</li>
-    <li>Z-score: {{ zscore }}</li>
-    <li>T-score: {{ tscore }}</li>
-    <li>report: {{ report }}</li>
-    <!-- <img src="/media/IMG00000_OC9o73F_report.jpg">-->
-    <img src="{{ report }}" alt="My image">
+  <li>id: {{ pid }}</li>
+  <li>sex: {{ sex }}</li>
+  <li>age: {{ age }}</li>
+  <li>mp: {{ mp }}</li>
+  <li>Z-score: {{ zscore }}</li>
+  <li>T-score: {{ tscore }}</li>
+  <li>report: {{ report }}</li>
+  <!-- <img src="/media/IMG00000_OC9o73F_report.jpg">-->
+  <img src="{{ report }}" alt="My image">
 
-  {% endif %}
+  
 
   <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

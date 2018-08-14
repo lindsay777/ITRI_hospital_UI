@@ -281,33 +281,20 @@ def manage_dcm(request):
     return render(request, 'core/manage_dcm.html')
 
 def show_dcm(request):
-
+    print(os.getcwd())
+    
     fileName = request.GET.get('file', None)
-    print(fileName)
+    # fileName / filePath preprocess
+    filePath = 'media/DCM/' + fileName
+    fileName = list(fileName)[:-4] #remove '.dcm'
+    fileName = ''.join(fileName)
+    print('fileName: ' + fileName)
+    print('filePath: ' + filePath)
 
-    # read zip file
-    zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', zipFileName))
+    
 
-    # create a folder with a uniqe name same as the zip file
-    folderNameList = list(zipFileName)[:-4] #remove '.zip'
-    folderName = ''.join(folderNameList)
-    folderPath = 'media/' + folderName
-
-    # extract zip file to the folder created
-    for file in zip_file.namelist():
-        zip_file.extract(file, os.path.join(os.getcwd(), folderPath))
-
-    # get .dcm files from the zip folder
-    zip_list = zip_file.namelist()
-    lstFilesDCM = []
-    for file_name in zip_list:
-        if ".dcm" in file_name.lower():
-            lstFilesDCM.append(os.path.join(os.getcwd(), folderPath, file_name))
-    print(lstFilesDCM[0] + '\n')
-
-    # read IMG00000
-    dataset = pydicom.dcmread(lstFilesDCM[0]) 
-
+    # read file
+    dataset = pydicom.dcmread(filePath) 
 
     # get patient's ID
     pid = dataset.PatientID
@@ -330,43 +317,42 @@ def show_dcm(request):
         del name_list[0:2]
         mp = ''.join(name_list)
 
-    #----- get image report from file IMG00000 -----  
-    # get image and save to report
-    # pydicom example: https://goo.gl/SMyny4
-    report = ''
-    if cv2.imwrite(folderPath + '/IMG00000_report.jpg', dataset.pixel_array):
-        report = '/' + folderPath + '/IMG00000_report.jpg'
-
-    #----- get zscore, tscore from file STR00000 -----
-    # read STR00000
-    dataset = pydicom.dcmread(lstFilesDCM[5])  
-
+    # ----- Judge from filename, get value or image -----
     zscore=[]
     tscore=[]
-    imageComments = dataset.ImageComments.split('><')
+    report=''
+    # get zscore, tscore from file STR00000
+    if fileName.startswith('STR00000'):
+        imageComments = dataset.ImageComments.split('><')
 
-    # get zscore
-    match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
-    for substring in match_zscore:
-        substring = substring.split('</')[0].split('>')[1]
-        zscore.append(substring)
+        # get zscore
+        match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
+        for substring in match_zscore:
+            substring = substring.split('</')[0].split('>')[1]
+            zscore.append(substring)
 
-    # get tscore
-    match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
-    for substring in match_tscore:
-        substring = substring.split('</')[0].split('>')[1]
-        tscore.append(substring)
+        # get tscore
+        match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
+        for substring in match_tscore:
+            substring = substring.split('</')[0].split('>')[1]
+            tscore.append(substring)
+
+    # get image and save to report from file IMG
+    # pydicom example: https://goo.gl/SMyny4
+    elif fileName.startswith('IMG'):      
+        if cv2.imwrite('media/DCM/' + fileName + '_report.jpg', dataset.pixel_array):
+            report = '/media/DCM/' + fileName + '_report.jpg'
 
     # uploaded_file_url = fs.url(zipFileName)
-    return render(request, 'core/simple_upload.html', {
+    return render(request, 'core/show_dcm.html', {
         # 'uploaded_file_url': uploaded_file_url,
-        # 'pid': pid,
-        # 'sex': sex,
-        # 'age': age,
-        # 'mp': mp,
-        # 'zscore': zscore,
-        # 'tscore': tscore,
-        # 'report': report,
+        'pid': pid,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+        'zscore': zscore,
+        'tscore': tscore,
+        'report': report,
     })
 
-    return render(request, 'core/simple_upload.html')
+    return render(request, 'core/show_dcm.html')
