@@ -148,6 +148,13 @@ def upload_dcm(request):
             del name_list[0:2]
             mp = ''.join(name_list)
 
+        # response={
+        #     'pid': pid,
+        #     'sex': sex,
+        #     'age': age,
+        #     'mp': mp,
+        # }
+
         #----- get image report from file IMG00000 -----  
         # get image and save to report
         # pydicom example: https://goo.gl/SMyny4
@@ -157,6 +164,7 @@ def upload_dcm(request):
         if fileName.startswith('IMG00000'):
             if cv2.imwrite('media/DCM/IMG00000_report.jpg', dataset.pixel_array):
                 report = '/media/DCM/IMG00000_report.jpg'
+                #response['report'] = '/media/DCM/IMG00000_report.jpg'
 
         #----- get zscore, tscore from file STR00000 -----
         # read STR00000
@@ -175,7 +183,14 @@ def upload_dcm(request):
                 substring = substring.split('</')[0].split('>')[1]
                 tscore.append(substring)
 
+            # response['zscore'] = zscore
+            # response['tscore'] = tscore
+        
+        # print(response)
+        # print(response[zscore])
         uploaded_file_url = fs.url(fileName)
+        # response={'uploaded_file_url': uploaded_file_url}
+        # return render(request, 'core/upload_dcm.html', response)
         return render(request, 'core/upload_dcm.html', {
             'uploaded_file_url': uploaded_file_url,
             'pid': pid,
@@ -186,8 +201,9 @@ def upload_dcm(request):
             'tscore': tscore,
             'report': report,
         })
-
-    return render(request, 'core/upload_dcm.html')
+    else:
+        return render(request, 'core/upload_dcm.html')
+        
 
 def upload_zip(request):
     if request.method == 'POST' and request.FILES['myfile']:
@@ -213,6 +229,11 @@ def upload_zip(request):
         fileName = ''.join(fileName)
         zipFilePath = 'media/ZIP/' + fileName
 
+        # response={
+        #     'zipFileName': zipFileName,
+        #     'zipFilePath': zipFilePath,
+        # }
+
         # print directory tree
         # traverse root directory, and list directories as dirs and files as files
         dir_tree = []
@@ -225,6 +246,7 @@ def upload_zip(request):
                 line = (len(path) * '---', file)
                 line = ''.join(line)
                 dir_tree.append(line)
+        # response['dir_tree'] = dir_tree
 
         # get .dcm files from the zip folder
         zip_list = zip_file.namelist()
@@ -234,15 +256,17 @@ def upload_zip(request):
                 lstFilesDCM.append(os.path.join(os.getcwd(), zipFilePath, file_name))
         print(lstFilesDCM[0] + '\n')
 
+        # response['uploaded_file_url'] = fs.url(zipFileName)
         uploaded_file_url = fs.url(zipFileName)
+        # return render(request, 'core/upload_zip.html', response)
         return render(request, 'core/upload_zip.html', {
             'uploaded_file_url': uploaded_file_url,
             'zipFileName': zipFileName,
             'zipFilePath': zipFilePath,
             'dir_tree': dir_tree,
         })
-
-    return render(request, 'core/upload_zip.html')
+    else: 
+        return render(request, 'core/upload_zip.html')
 
 # 在view裡面可以使用form
 # 定義一個view 透過request把資料POST到request.POST當中
@@ -259,7 +283,6 @@ def model_form_upload(request):
         'form': form
     })
 
-
 def manage_dcm(request):
 
     folderPath = 'media/DCM/'
@@ -270,8 +293,6 @@ def manage_dcm(request):
     return render(request, 'core/manage_dcm.html', {
         'onlyfiles': onlyfiles,
     })
-
-    return render(request, 'core/manage_dcm.html')
 
 def show_dcm(request):
     print(os.getcwd())
@@ -314,6 +335,12 @@ def show_dcm(request):
     zscore=[]
     tscore=[]
     report=''
+    response={
+        'pid': pid,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+        }
     # get zscore, tscore from file STR00000
     if fileName.startswith('STR00000'):
         imageComments = dataset.ImageComments.split('><')
@@ -330,24 +357,18 @@ def show_dcm(request):
             substring = substring.split('</')[0].split('>')[1]
             tscore.append(substring)
 
+        response={
+            'zscore': zscore,
+            'tscore': tscore,
+        }
+    
     # get image and save to report from file IMG
     # pydicom example: https://goo.gl/SMyny4
     elif fileName.startswith('IMG'):      
         if cv2.imwrite('media/DCM/' + fileName + '_report.jpg', dataset.pixel_array):
-            report = '/media/DCM/' + fileName + '_report.jpg'
-
-    # uploaded_file_url = fs.url(zipFileName)
-    return render(request, 'core/show_dcm.html', {
-        'pid': pid,
-        'sex': sex,
-        'age': age,
-        'mp': mp,
-        'zscore': zscore,
-        'tscore': tscore,
-        'report': report,
-    })
-
-    return render(request, 'core/show_dcm.html')
+            response['report'] = '/media/DCM/' + fileName + '_report.jpg'
+    print(response)
+    return render(request, 'core/show_dcm.html', response)
 
 def manage_zip(request):
 
@@ -360,4 +381,8 @@ def manage_zip(request):
         'onlyfiles': onlyfiles,
     })
 
-    return render(request, 'core/manage_zip.html')
+
+# TODO: 
+# 1. rename/download/delete in manage files
+# 2. warnings for same filenames
+# 3. upload zip file: click to show??
