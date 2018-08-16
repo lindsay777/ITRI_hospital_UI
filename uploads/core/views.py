@@ -4,6 +4,7 @@ from django.core.files.storage import FileSystemStorage
 
 from uploads.core.models import Document
 from uploads.core.forms import DocumentForm
+from uploads.core.forms import nameForm
 
 from os import listdir
 from os.path import isfile, join
@@ -229,6 +230,9 @@ def upload_zip(request):
         fileName = ''.join(fileName)
         zipFilePath = 'media/ZIP/' + fileName
 
+        # response['zipFileName'] = zipFileName
+        # response['zipFilePath'] = zfp
+
         # response={
         #     'zipFileName': zipFileName,
         #     'zipFilePath': zipFilePath,
@@ -268,9 +272,7 @@ def upload_zip(request):
     else: 
         return render(request, 'core/upload_zip.html')
 
-# 在view裡面可以使用form
-# 定義一個view 透過request把資料POST到request.POST當中
-# 再把request.POST當作constructor傳入form裡面
+
 def model_form_upload(request):
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
@@ -299,6 +301,7 @@ def show_dcm(request):
 
     # get the fileName user clicked from template
     fileName = request.GET.get('file', None)
+    request.session['fileName'] = fileName
 
     # fileName / filePath preprocess
     filePath = 'media/DCM/' + fileName
@@ -340,7 +343,7 @@ def show_dcm(request):
         'sex': sex,
         'age': age,
         'mp': mp,
-        }
+    }
     # get zscore, tscore from file STR00000
     if fileName.startswith('STR00000'):
         imageComments = dataset.ImageComments.split('><')
@@ -357,10 +360,14 @@ def show_dcm(request):
             substring = substring.split('</')[0].split('>')[1]
             tscore.append(substring)
 
-        response={
-            'zscore': zscore,
-            'tscore': tscore,
-        }
+        response['zscore'] = zscore
+        response['tscore'] = tscore
+
+        # response={
+        #     'response': response,
+        #     'zscore': zscore,
+        #     'tscore': tscore,
+        # }
     
     # get image and save to report from file IMG
     # pydicom example: https://goo.gl/SMyny4
@@ -381,8 +388,37 @@ def manage_zip(request):
         'onlyfiles': onlyfiles,
     })
 
+def rename(request):
+    # # rename file
+    # get the fileName user clicked from template
+    fileName = request.session['fileName']
+    print(fileName)
+    print(os.getcwd())
+    #FilePath = 'media/DCM/' + fileName
+
+    if request.method == 'POST':
+        form=nameForm(request.POST)
+        if form.is_valid():
+            response={}
+            name=form.cleaned_data['rename']
+            response['result']=name
+            #fileName = show_dcm(request)
+            os.rename('media/DCM/' + fileName, 'media/DCM/' + name)
+            print(name)
+        return render(request, 'core/result.html', response)
+    else:
+        return render(request, 'core/result.html')
+
+    # delete file
+    #     os.remove()
+
+    # # download file
+
+
+
 
 # TODO: 
 # 1. rename/download/delete in manage files
 # 2. warnings for same filenames
 # 3. upload zip file: click to show??
+# 4. refine code: response

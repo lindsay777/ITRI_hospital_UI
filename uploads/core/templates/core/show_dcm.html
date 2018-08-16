@@ -21,5 +21,11 @@
     <img src="{{ report }}" alt="My image">
   {% endif %} 
 
+  <form action="/uploads/rename/" method="post">
+    {% csrf_token %}
+    <p>rename: <input type="text" name="rename"></p>
+    <input type="submit" value="submit">
+  </form>
+
   <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

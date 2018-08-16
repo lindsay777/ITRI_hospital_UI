@@ -7,3 +7,6 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ('description', 'document', )
+
+class nameForm(forms.Form):
+    rename=forms.CharField()
