@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^uploads/manageDCM/$', views.manage_dcm, name='manage_dcm'),
     url(r'^uploads/showDCM/$', views.show_dcm, name='show_dcm'),
     url(r'^uploads/rename/$', views.rename, name='rename'),
+    url(r'^uploads/remove/$', views.remove, name='remove'),
     url(r'^uploads/manageZIP/$', views.manage_zip, name='manage_zip'),
     url(r'^admin/', admin.site.urls),
 ]

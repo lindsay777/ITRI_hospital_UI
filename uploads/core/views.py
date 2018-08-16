@@ -389,12 +389,9 @@ def manage_zip(request):
     })
 
 def rename(request):
-    # # rename file
-    # get the fileName user clicked from template
     fileName = request.session['fileName']
     print(fileName)
     print(os.getcwd())
-    #FilePath = 'media/DCM/' + fileName
 
     if request.method == 'POST':
         form=nameForm(request.POST)
@@ -402,10 +399,31 @@ def rename(request):
             response={}
             name=form.cleaned_data['rename']
             response['result']=name
-            #fileName = show_dcm(request)
             os.rename('media/DCM/' + fileName, 'media/DCM/' + name)
+            #fileName = request.session['fileName']
             print(name)
+        # TODO: response under if?
         return render(request, 'core/result.html', response)
+    else:
+        return render(request, 'core/result.html')
+
+def remove(request):
+    fileName = request.session['fileName']
+    print(fileName)
+    print(os.getcwd())
+    filePath = 'media/DCM/'
+    print('filePath: '+filePath)
+    print(os.listdir(filePath))
+    if request.method == 'POST':
+        # form=nameForm(request.POST)
+        # if form.is_valid():
+        #     response={}
+        #     name=form.cleaned_data['remove']
+        #     response['result']=name
+        os.remove('media/DCM/' + fileName)
+            # print(name)
+            #return render(request, 'core/result.html', response)
+        return render(request, 'core/result.html')
     else:
         return render(request, 'core/result.html')
 
