@@ -16,10 +16,18 @@
     <li>zipFilePath: {{ zipFilePath }}</li>
     <li>dir_tree:</li>
     
-    {% for dir in dir_tree %}
-      <div>
-        {{ dir }}
-      </div>
+    {% for dir, file in file_dir_list %}
+      {% if '.dcm' in file %}
+        <div>
+          <a href="{% url 'show_zip' %}?file={{file}}">{{ dir }}</a>
+        </div>
+
+      {% else %}
+        <div>
+          {{ dir }}
+        </div>
+      {% endif %}
+      
     {% endfor %}
 
   {% endif %}

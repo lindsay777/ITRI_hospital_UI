@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+  <li>id: {{ pid }}</li>
+  <li>sex: {{ sex }}</li>
+  <li>age: {{ age }}</li>
+  <li>mp: {{ mp }}</li>
+
+  {% if zscore and tscore %}
+    <li>Z-score: {{ zscore }}</li>
+    <li>T-score: {{ tscore }}</li>
+  {% endif %}  
+
+  {% if report %}
+    <li>report: {{ report }}</li>
+    <img src="{{ report }}" alt="My image">
+  {% endif %} 
+
+  <p><a href="{% url 'upload_zip' %}">Return to Upload Zip file</a></p>
+  <p><a href="{% url 'home' %}">Return to home</a></p>
+{% endblock %}

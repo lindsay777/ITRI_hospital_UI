@@ -16,6 +16,7 @@ import zipfile
 import cv2
 import os
 import shutil
+import re
 from pydicom.data import get_testdata_files
 
 # TODO: 
@@ -201,16 +202,15 @@ def upload_zip(request):
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         zipFileName = fs.save(myfile.name, myfile)
-
+        request.session['zipFileName']=zipFileName
         print('zipFilename:' + zipFileName)
+
         print(os.getcwd())
 
         # move file form media/ to media/dcm/ folder
         shutil.move('media/'+zipFileName, 'media/ZIP/'+zipFileName)
-
         # read zip file
         zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', zipFileName))
-
         # extract zip file
         for file in zip_file.namelist():
             zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
@@ -218,6 +218,7 @@ def upload_zip(request):
         # get folder name of the extracted zip file
         fileName = list(zipFileName)[:-4] #remove '.zip'
         fileName = ''.join(fileName)
+        print('fileName: '+fileName)
         zipFilePath = 'media/ZIP/' + fileName
 
         response={
@@ -225,27 +226,34 @@ def upload_zip(request):
             'zipFilePath': zipFilePath,
         }
 
-        # print directory tree
-        # traverse root directory, and list directories as dirs and files as files
+        # directory tree
         dir_tree = []
+        # contain '.dcm' files 
+        file_tree = []
+        # traverse root directory, and list directories as dirs and files as files
         for root, dirs, files in os.walk(zipFilePath):
             path = root.split(os.sep)
             line = ((len(path) - 1) * '---', os.path.basename(root))
             line = ''.join(line)
             dir_tree.append(line)
+            file_tree.append('')
             for file in files:
                 line = (len(path) * '---', file)
                 line = ''.join(line)
                 dir_tree.append(line)
+                file_tree.append(file)
         response['dir_tree'] = dir_tree
+        response['file_tree'] = file_tree
+        # zip so that templates can show
+        file_dir_list = zip(dir_tree, file_tree)
+        response['file_dir_list'] = file_dir_list
 
-        # get .dcm files from the zip folder
-        zip_list = zip_file.namelist()
-        lstFilesDCM = []
-        for file_name in zip_list:
-            if ".dcm" in file_name.lower():
-                lstFilesDCM.append(os.path.join(os.getcwd(), zipFilePath, file_name))
-        print(lstFilesDCM[0] + '\n')
+        # # get .dcm files from the zip folder
+        # zip_list = zip_file.namelist()
+        # lstFilesDCM = []
+        # for file_name in zip_list:
+        #     if ".dcm" in file_name.lower():
+        #         lstFilesDCM.append(os.path.join(os.getcwd(), zipFilePath, file_name))
 
         #TODO: fix url
         response['uploaded_file_url'] = fs.url(zipFileName)
@@ -253,6 +261,92 @@ def upload_zip(request):
         return render(request, 'core/upload_zip.html', response)
     else: 
         return render(request, 'core/upload_zip.html')
+
+def show_zip(request):
+    print('----show zip----')
+    print(os.getcwd())
+    zipFileName = request.session['zipFileName']
+    zipFileName = list(zipFileName)[:-4] #remove '.zip'
+    zipFileName = ''.join(zipFileName)
+    print('zipFileName: '+zipFileName)
+
+    # get the fileName user clicked from template
+    fileName = request.GET.get('file', None)
+    print('fileName: '+fileName)
+
+    if fileName.startswith('STR'):
+        filePath = 'media/ZIP/' + zipFileName + '/SDY00000/' + fileName
+        print('STRfilePath: '+ filePath)
+    elif fileName.startswith('IMG'):
+        filePath = 'media/ZIP/' + zipFileName + '/SDY00000/SRS00000/' + fileName
+        print('IMGfilePath: '+ filePath)
+
+    # read file
+    dataset = pydicom.dcmread(filePath) 
+
+    # get patient's ID
+    pid = dataset.PatientID
+
+    # get sex
+    sex = dataset.PatientSex
+
+    # get age (ex. 063Y->63)
+    age_list = list(dataset.PatientAge)
+    del age_list[-1]
+    if age_list[0]=='0':
+        del age_list[0]
+    age = ''.join(age_list)
+
+    # get MP
+    name = str(dataset.PatientName)
+    if "(PM" in name:
+        name = name.split('(')[1].split(')')[0]
+        name_list = list(name)
+        del name_list[0:2]
+        mp = ''.join(name_list)
+
+    response={
+        'pid': pid,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+    }
+
+    # ----- Judge from filename, get value or image -----
+    zscore=[]
+    tscore=[]
+    report=''
+    fileName = list(fileName)[:-4] #remove '.dcm'
+    fileName = ''.join(fileName)
+    # get zscore, tscore from file STR00000
+    if fileName.startswith('STR00000'):
+        imageComments = dataset.ImageComments.split('><')
+
+        # get zscore
+        match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
+        for substring in match_zscore:
+            substring = substring.split('</')[0].split('>')[1]
+            zscore.append(substring)
+
+        # get tscore
+        match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
+        for substring in match_tscore:
+            substring = substring.split('</')[0].split('>')[1]
+            tscore.append(substring)
+
+        response['zscore'] = zscore
+        response['tscore'] = tscore
+    
+    
+    # get image and save to report from file IMG
+    # pydicom example: https://goo.gl/SMyny4
+    elif fileName.startswith('IMG'):      
+        # TODO: imshow instead of imwrite? two views?
+        if cv2.imwrite('media/ZIP/' + fileName + '_report.jpg', dataset.pixel_array):
+            response['report'] = '/media/ZIP/' + fileName + '_report.jpg'
+
+    print(response)
+    return render(request, 'core/show_zip.html', response)
 
 def model_form_upload(request):
     if request.method == 'POST':
