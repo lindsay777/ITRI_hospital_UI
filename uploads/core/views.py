@@ -22,7 +22,16 @@ from pydicom.data import get_testdata_files
 # TODO: 
 # 1. delete in manage files page
 # 2. warnings for same filenames
-# 3. upload zip file: add link to each file & click to show_dcm
+
+# variable naming principle:
+# myfile: .dcm
+# myZipFile: .zip
+# zipFolder: folder
+# fileName: no .dcm
+
+# session:
+# upload_zip: myZipFile
+# show_dcm: myfile
 
 def home(request):
     documents = Document.objects.all()
@@ -59,17 +68,14 @@ def simple_upload(request):
 
         # get patient's ID
         pid = dataset.PatientID
-
         # get sex
         sex = dataset.PatientSex
-
         # get age (ex. 063Y->63)
         age_list = list(dataset.PatientAge)
         del age_list[-1]
         if age_list[0]=='0':
             del age_list[0]
         age = ''.join(age_list)
-
         # get MP
         name = str(dataset.PatientName)
         if "(PM" in name:
@@ -98,7 +104,6 @@ def simple_upload(request):
         for substring in match_zscore:
             substring = substring.split('</')[0].split('>')[1]
             zscore.append(substring)
-
         # get tscore
         match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
         for substring in match_tscore:
@@ -123,28 +128,25 @@ def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
-        fileName = fs.save(myfile.name, myfile)
+        myfile = fs.save(myfile.name, myfile)
 
         # move file form media/ to media/dcm/ folder
-        shutil.move('media/'+fileName, 'media/DCM/'+fileName)
-        dcmFilePath = 'media/DCM/' + fileName
+        shutil.move('media/'+myfile, 'media/DCM/'+myfile)
+        dcmFilePath = 'media/DCM/' + myfile
 
         # read file
         dataset = pydicom.dcmread(dcmFilePath) 
 
         # get patient's ID
         pid = dataset.PatientID
-
         # get sex
         sex = dataset.PatientSex
-
         # get age (ex. 063Y->63)
         age_list = list(dataset.PatientAge)
         del age_list[-1]
         if age_list[0]=='0':
             del age_list[0]
         age = ''.join(age_list)
-
         # get MP
         name = str(dataset.PatientName)
         if "(PM" in name:
@@ -165,14 +167,14 @@ def upload_dcm(request):
         # pydicom example: https://goo.gl/SMyny4
         zscore=[]
         tscore=[]
-        if fileName.startswith('IMG00000'):
-            if cv2.imwrite('media/DCM/IMG00000_report.jpg', dataset.pixel_array):
+        if myfile.startswith('IMG00000'):
+            if cv2.imwrite('media/DCM/JPG/IMG00000_report.jpg', dataset.pixel_array):
                 # must add a '/' ahead
-                response['report'] = '/media/DCM/IMG00000_report.jpg'
+                response['report'] = '/media/DCM/JPG/IMG00000_report.jpg'
 
         #----- get zscore, tscore from file STR00000 -----
         # read STR00000
-        elif fileName.startswith('STR00000'):       
+        elif myfile.startswith('STR00000'):       
             imageComments = dataset.ImageComments.split('><')
 
             # get zscore
@@ -190,7 +192,7 @@ def upload_dcm(request):
             response['zscore'] = zscore
             response['tscore'] = tscore
 
-        uploaded_file_url = fs.url(fileName)
+        uploaded_file_url = fs.url(myfile)
         response['uploaded_file_url'] = uploaded_file_url
 
         return render(request, 'core/upload_dcm.html', response)
@@ -201,28 +203,28 @@ def upload_zip(request):
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
-        zipFileName = fs.save(myfile.name, myfile)
-        request.session['zipFileName']=zipFileName
-        print('zipFilename:' + zipFileName)
+        myZipFile = fs.save(myfile.name, myfile)
+        request.session['myZipFile']=myZipFile
+        print('myZipFile:' + myZipFile)
 
         print(os.getcwd())
 
         # move file form media/ to media/dcm/ folder
-        shutil.move('media/'+zipFileName, 'media/ZIP/'+zipFileName)
+        shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
         # read zip file
-        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', zipFileName))
+        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
         # extract zip file
         for file in zip_file.namelist():
             zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
         
         # get folder name of the extracted zip file
-        fileName = list(zipFileName)[:-4] #remove '.zip'
-        fileName = ''.join(fileName)
-        print('fileName: '+fileName)
-        zipFilePath = 'media/ZIP/' + fileName
+        zipFolder = list(myZipFile)[:-4] #remove '.zip'
+        zipFolder = ''.join(zipFolder)
+        print('zipFolder: '+zipFolder)
+        zipFilePath = 'media/ZIP/' + zipFolder
 
         response={
-            'zipFileName': zipFileName,
+            'myZipFile': myZipFile,
             'zipFilePath': zipFilePath,
         }
 
@@ -248,15 +250,8 @@ def upload_zip(request):
         file_dir_list = zip(dir_tree, file_tree)
         response['file_dir_list'] = file_dir_list
 
-        # # get .dcm files from the zip folder
-        # zip_list = zip_file.namelist()
-        # lstFilesDCM = []
-        # for file_name in zip_list:
-        #     if ".dcm" in file_name.lower():
-        #         lstFilesDCM.append(os.path.join(os.getcwd(), zipFilePath, file_name))
-
         #TODO: fix url
-        response['uploaded_file_url'] = fs.url(zipFileName)
+        response['uploaded_file_url'] = fs.url(myZipFile)
         
         return render(request, 'core/upload_zip.html', response)
     else: 
@@ -265,20 +260,20 @@ def upload_zip(request):
 def show_zip(request):
     print('----show zip----')
     print(os.getcwd())
-    zipFileName = request.session['zipFileName']
-    zipFileName = list(zipFileName)[:-4] #remove '.zip'
-    zipFileName = ''.join(zipFileName)
-    print('zipFileName: '+zipFileName)
+    zipFolder = request.session['myZipFile']
+    zipFolder = list(zipFolder)[:-4] # remove '.zip'
+    zipFolder = ''.join(zipFolder)
+    print('zipFolder: '+zipFolder)
 
-    # get the fileName user clicked from template
-    fileName = request.GET.get('file', None)
-    print('fileName: '+fileName)
+    # get the file name user clicked from template
+    myfile = request.GET.get('file', None)
+    print('myfile: '+myfile)
 
-    if fileName.startswith('STR'):
-        filePath = 'media/ZIP/' + zipFileName + '/SDY00000/' + fileName
+    if myfile.startswith('STR'):
+        filePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + myfile
         print('STRfilePath: '+ filePath)
-    elif fileName.startswith('IMG'):
-        filePath = 'media/ZIP/' + zipFileName + '/SDY00000/SRS00000/' + fileName
+    elif myfile.startswith('IMG'):
+        filePath = 'media/ZIP/' + zipFolder + '/SDY00000/SRS00000/' + myfile
         print('IMGfilePath: '+ filePath)
 
     # read file
@@ -286,17 +281,14 @@ def show_zip(request):
 
     # get patient's ID
     pid = dataset.PatientID
-
     # get sex
     sex = dataset.PatientSex
-
     # get age (ex. 063Y->63)
     age_list = list(dataset.PatientAge)
     del age_list[-1]
     if age_list[0]=='0':
         del age_list[0]
     age = ''.join(age_list)
-
     # get MP
     name = str(dataset.PatientName)
     if "(PM" in name:
@@ -312,11 +304,11 @@ def show_zip(request):
         'mp': mp,
     }
 
-    # ----- Judge from filename, get value or image -----
+    # ----- Judge from myfile, get value or image -----
     zscore=[]
     tscore=[]
     report=''
-    fileName = list(fileName)[:-4] #remove '.dcm'
+    fileName = list(myfile)[:-4] #remove '.dcm'
     fileName = ''.join(fileName)
     # get zscore, tscore from file STR00000
     if fileName.startswith('STR00000'):
@@ -327,7 +319,6 @@ def show_zip(request):
         for substring in match_zscore:
             substring = substring.split('</')[0].split('>')[1]
             zscore.append(substring)
-
         # get tscore
         match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
         for substring in match_tscore:
@@ -342,8 +333,8 @@ def show_zip(request):
     # pydicom example: https://goo.gl/SMyny4
     elif fileName.startswith('IMG'):      
         # TODO: imshow instead of imwrite? two views?
-        if cv2.imwrite('media/ZIP/' + fileName + '_report.jpg', dataset.pixel_array):
-            response['report'] = '/media/ZIP/' + fileName + '_report.jpg'
+        if cv2.imwrite('media/ZIP/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
+            response['report'] = '/media/ZIP/JPG/' + fileName + '_report.jpg'
 
     print(response)
     return render(request, 'core/show_zip.html', response)
@@ -375,33 +366,27 @@ def manage_dcm(request):
 def show_dcm(request):
     print(os.getcwd())
 
-    # get the fileName user clicked from template
-    fileName = request.GET.get('file', None)
-    request.session['fileName'] = fileName
+    # get the file user clicked from template
+    myfile = request.GET.get('file', None)
+    request.session['myfile'] = myfile
 
-    # fileName / filePath preprocess
-    filePath = 'media/DCM/' + fileName
+    # filePath preprocess
+    filePath = 'media/DCM/' + myfile
     request.session['filePath'] = filePath
-    
-    fileName = list(fileName)[:-4] #remove '.dcm'
-    fileName = ''.join(fileName)
 
     # read file
     dataset = pydicom.dcmread(filePath) 
 
     # get patient's ID
     pid = dataset.PatientID
-
     # get sex
     sex = dataset.PatientSex
-
     # get age (ex. 063Y->63)
     age_list = list(dataset.PatientAge)
     del age_list[-1]
     if age_list[0]=='0':
         del age_list[0]
     age = ''.join(age_list)
-
     # get MP
     name = str(dataset.PatientName)
     if "(PM" in name:
@@ -422,6 +407,8 @@ def show_dcm(request):
     zscore=[]
     tscore=[]
     report=''
+    fileName = list(myfile)[:-4] #remove '.dcm'
+    fileName = ''.join(fileName)
     
     # get zscore, tscore from file STR00000
     if fileName.startswith('STR00000'):
@@ -432,7 +419,6 @@ def show_dcm(request):
         for substring in match_zscore:
             substring = substring.split('</')[0].split('>')[1]
             zscore.append(substring)
-
         # get tscore
         match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
         for substring in match_tscore:
@@ -445,8 +431,8 @@ def show_dcm(request):
     # get image and save to report from file IMG
     # pydicom example: https://goo.gl/SMyny4
     elif fileName.startswith('IMG'):      
-        if cv2.imwrite('media/DCM/' + fileName + '_report.jpg', dataset.pixel_array):
-            response['report'] = '/media/DCM/' + fileName + '_report.jpg'
+        if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
+            response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
     print(response)
     return render(request, 'core/show_dcm.html', response)
 
@@ -463,7 +449,7 @@ def manage_zip(request):
 
 def rename(request):
     # get file name from show_DCM
-    fileName = request.session['fileName']
+    myfile = request.session['myfile']
 
     if request.method == 'POST':
         form=nameForm(request.POST)
@@ -471,19 +457,21 @@ def rename(request):
         if form.is_valid():
             name=form.cleaned_data['rename']
             response['result']=name
-            os.rename('media/DCM/' + fileName, 'media/DCM/' + name)
+            os.rename('media/DCM/' + myfile, 'media/DCM/' + name)
+            # if startswith
+            # os.rename('media/DCM/JPG/' + myfile, 'media/DCM/JPG/' + name)
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
 
 def remove(request):
     # get file name from show_DCM
-    fileName = request.session['fileName']
+    myfile = request.session['myfile']
  
     if request.method == 'POST':
         response={}
-        response['result']=fileName
-        os.remove('media/DCM/' + fileName)
+        response['result']=myfile
+        os.remove('media/DCM/' + myfile)
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
