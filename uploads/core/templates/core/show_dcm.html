@@ -10,11 +10,16 @@
     {% csrf_token %}
     <p>rename: <input type="text" name="rename"><input type="submit" value="submit"></p>
   </form>
+
   <form action="/uploads/remove/" method="post">
     {% csrf_token %}
     <input type="submit" value="delete">
   </form>
 
+  <form action="/uploads/download/" method="post">
+    {% csrf_token %}
+    <input type="submit" value="download">
+  </form>
 
   <li>id: {{ pid }}</li>
   <li>sex: {{ sex }}</li>

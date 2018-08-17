@@ -16,12 +16,16 @@
     <li>sex: {{ sex }}</li>
     <li>age: {{ age }}</li>
     <li>mp: {{ mp }}</li>
-    <li>Z-score: {{ zscore }}</li>
-    <li>T-score: {{ tscore }}</li>
-    <li>report: {{ report }}</li>
-    <!-- <img src="/media/IMG00000_OC9o73F_report.jpg">-->
-    <img src="{{ report }}" alt="My image">
 
+    {% if zscore and tscore %}
+      <li>Z-score: {{ zscore }}</li>
+      <li>T-score: {{ tscore }}</li>
+    {% endif %}
+    
+    {% if report %}
+      <li>report: {{ report }}</li>
+      <img src="{{ report }}" alt="My image">
+    {% endif %}
   {% endif %}
 
   <p><a href="{% url 'home' %}">Return to home</a></p>
