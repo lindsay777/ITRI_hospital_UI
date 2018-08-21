@@ -458,7 +458,7 @@ def manage_zip(request):
 
     # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-
+    # select files to remove
     if request.method == 'POST':
         selected = request.POST.getlist('selected')
         result=''
@@ -477,6 +477,52 @@ def manage_zip(request):
     return render(request, 'core/manage_zip.html', {
         'onlyfiles': onlyfiles,
     })
+
+def manage_show_zip(request):
+    print('----manage show zip----')
+    print(os.getcwd())
+
+    # get the file name user clicked from template
+    myZipFile = request.GET.get('file', None)
+    print('myZipFile: '+myZipFile)
+    
+    zipFolder = list(myZipFile)[:-4] # remove '.zip'
+    zipFolder = ''.join(zipFolder)
+    print('zipFolder: '+zipFolder)
+    zipFilePath = 'media/ZIP/' + zipFolder
+
+    response={
+        'myZipFile': myZipFile,
+        'zipFilePath': zipFilePath,
+    }
+
+    # directory tree
+    dir_tree = []
+    # contain '.dcm' files 
+    file_tree = []
+    # traverse root directory, and list directories as dirs and files as files
+    for root, dirs, files in os.walk(zipFilePath):
+        path = root.split(os.sep)
+        line = ((len(path) - 1) * '---', os.path.basename(root))
+        line = ''.join(line)
+        dir_tree.append(line)
+        file_tree.append('')
+        for file in files:
+            line = (len(path) * '---', file)
+            line = ''.join(line)
+            dir_tree.append(line)
+            file_tree.append(file)
+    response['dir_tree'] = dir_tree
+    response['file_tree'] = file_tree
+    # zip so that templates can show
+    file_dir_list = zip(dir_tree, file_tree)
+    response['file_dir_list'] = file_dir_list
+
+    #TODO: fix url
+    response['uploaded_file_url'] = myZipFile
+    
+    return render(request, 'core/manage_show_zip.html', response)
+
 
 def rename(request):
     # get file name from show_DCM

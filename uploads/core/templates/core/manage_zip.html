@@ -13,7 +13,7 @@
   {% for file in onlyfiles %}
     <li>
       <input type='checkbox' name='selected' value={{file}}>
-      <label><a href="{% url 'show_zip' %}?file={{file}}">{{ file }}</a></label>
+      <label><a href="{% url 'manage_show_zip' %}?file={{file}}">{{ file }}</a></label>
     </li>
   {% endfor %}
 
