@@ -249,7 +249,6 @@ def upload_zip(request):
         file_dir_list = zip(dir_tree, file_tree)
         response['file_dir_list'] = file_dir_list
 
-        #TODO: fix url
         response['uploaded_file_url'] = fs.url(myZipFile)
         
         return render(request, 'core/upload_zip.html', response)
@@ -327,11 +326,9 @@ def show_zip(request):
         response['zscore'] = zscore
         response['tscore'] = tscore
     
-    
     # get image and save to report from file IMG
     # pydicom example: https://goo.gl/SMyny4
     elif fileName.startswith('IMG'):      
-        # TODO: imshow instead of imwrite? two views?
         if cv2.imwrite('media/ZIP/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             response['report'] = '/media/ZIP/JPG/' + fileName + '_report.jpg'
 
@@ -518,11 +515,9 @@ def manage_show_zip(request):
     file_dir_list = zip(dir_tree, file_tree)
     response['file_dir_list'] = file_dir_list
 
-    #TODO: fix url
     response['uploaded_file_url'] = myZipFile
     
     return render(request, 'core/manage_show_zip.html', response)
-
 
 def rename(request):
     # get file name from show_DCM
