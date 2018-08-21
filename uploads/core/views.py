@@ -537,7 +537,6 @@ def rename(request):
     # get file type (dcm or zip)
     fileType = list(myfile)[-3:]
     fileType = ''.join(fileType)
-    print(fileType)
     # remove '.dcm'
     fileName = list(myfile)[:-4]
     fileName = ''.join(fileName)
@@ -549,6 +548,7 @@ def rename(request):
         if form.is_valid():
             name=form.cleaned_data['rename']
             response['result']=name
+
             folderName = list(name)[:-4]
             folderName = ''.join(folderName)
 
@@ -571,13 +571,28 @@ def rename(request):
         return render(request, 'core/result.html')
 
 def remove(request):
-    # get file name from show_DCM
+    # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
+
+    # get file type (dcm or zip)
+    fileType = list(myfile)[-3:]
+    fileType = ''.join(fileType)
+    print(fileType)
  
     if request.method == 'POST':
         response={}
         response['result']=myfile
-        os.remove('media/DCM/' + myfile)
+
+        if fileType.startswith('zip'):
+            folderName = list(myfile)[:-4]
+            folderName = ''.join(folderName)
+            print(folderName)
+
+            os.remove('media/ZIP/' + myfile)
+            shutil.rmtree('media/ZIP/' + folderName)
+
+        elif fileType.startswith('dcm'):
+            os.remove('media/DCM/' + myfile)
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
