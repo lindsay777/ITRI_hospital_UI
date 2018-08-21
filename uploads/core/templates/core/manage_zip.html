@@ -4,11 +4,20 @@
 
 {% block content %}
 
+
+<form action="/uploads/manageZIP/" method="post">
+  {% csrf_token %}
+  <input type="submit" value="delete">
+
+
   {% for file in onlyfiles %}
     <li>
-      {{ file }}
+      <input type='checkbox' name='selected' value={{file}}>
+      <label><a href="{% url 'show_zip' %}?file={{file}}">{{ file }}</a></label>
     </li>
   {% endfor %}
+
+</form>
 
   <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

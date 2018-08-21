@@ -20,7 +20,6 @@ import re
 from pydicom.data import get_testdata_files
 
 # TODO: 
-# 1. delete in manage files page
 # 2. warnings for same filenames
 
 # variable naming principle:
@@ -459,6 +458,21 @@ def manage_zip(request):
 
     # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+
+    if request.method == 'POST':
+        selected = request.POST.getlist('selected')
+        result=''
+        response={}
+        for files in selected:
+            fileName = list(files)[:-4] # remove '.zip'
+            fileName = ''.join(fileName)
+            # remove zip file and extract folder
+            os.remove('media/ZIP/' + files) 
+            shutil.rmtree('media/ZIP/' + fileName)
+            
+            result+=fileName + ' '
+            response['result'] = result
+        return render(request, 'core/result.html', response)
 
     return render(request, 'core/manage_zip.html', {
         'onlyfiles': onlyfiles,
