@@ -483,11 +483,15 @@ def manage_show_zip(request):
     myfile = request.GET.get('file', None)
     request.session['myfile'] = myfile
     print('myfile: '+myfile)
+    zipFilePath = 'media/ZIP/' + myfile
+    request.session['filePath'] = zipFilePath
     
     zipFolder = list(myfile)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
     print('zipFolder: '+zipFolder)
-    zipFilePath = 'media/ZIP/' + zipFolder
+    zipFolderPath = 'media/ZIP/' + zipFolder
+    
+    
 
     response={
         'myfile': myfile,
@@ -510,7 +514,7 @@ def manage_show_zip(request):
     # contain '.dcm' files 
     file_tree = []
     # traverse root directory, and list directories as dirs and files as files
-    for root, dirs, files in os.walk(zipFilePath):
+    for root, dirs, files in os.walk(zipFolderPath):
         path = root.split(os.sep)
         line = ((len(path) - 1) * '---', os.path.basename(root))
         line = ''.join(line)
@@ -577,22 +581,22 @@ def remove(request):
     # get file type (dcm or zip)
     fileType = list(myfile)[-3:]
     fileType = ''.join(fileType)
-    print(fileType)
  
     if request.method == 'POST':
         response={}
         response['result']=myfile
 
+        # if the file is a zip, remove both zip and the extracted folder
         if fileType.startswith('zip'):
             folderName = list(myfile)[:-4]
             folderName = ''.join(folderName)
-            print(folderName)
 
             os.remove('media/ZIP/' + myfile)
             shutil.rmtree('media/ZIP/' + folderName)
-
+        # if the file is a dcm, remove dcm
         elif fileType.startswith('dcm'):
             os.remove('media/DCM/' + myfile)
+
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
@@ -600,6 +604,12 @@ def remove(request):
 def download(request):
     # get file path from show_DCM
     filePath = request.session['filePath']
+    # get file name from show_DCM/manage_show_zip
+    myfile = request.session['myfile']
+    # get file type (dcm or zip)
+    fileType = list(myfile)[-3:]
+    fileType = ''.join(fileType)
+    print(fileType)
 
     if request.method == 'POST':
         if os.path.exists(filePath):
@@ -608,9 +618,12 @@ def download(request):
                 response['Content-Disposition'] = 'inline; filename=' + os.path.basename(filePath)
                 return response
         else:
-            return render(request, 'core/show_dcm.html')
-    else:
-        return render(request, 'core/show_dcm.html')
+            if fileType.startswith('dcm'):
+                return render(request, 'core/show_dcm.html')
+            elif fileType.startswith('zip'):
+                return render(request, 'core/manage_show_zip.html')
+
+    
 
 
 
