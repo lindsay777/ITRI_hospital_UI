@@ -11,6 +11,21 @@
 
   <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
 
+  <form action="/uploads/rename/" method="post">
+    {% csrf_token %}
+    <p>rename: <input type="text" name="rename"><input type="submit" value="submit"></p>
+  </form>
+
+  <form action="/uploads/remove/" method="post">
+    {% csrf_token %}
+    <input type="submit" value="delete">
+  </form>
+
+  <form action="/uploads/download/" method="post">
+    {% csrf_token %}
+    <input type="submit" value="download">
+  </form>
+
   <li>zipFileName: {{ myZipFile }}</li>
   <li>zipFilePath: {{ zipFilePath }}</li>
   <li>dir_tree:</li>

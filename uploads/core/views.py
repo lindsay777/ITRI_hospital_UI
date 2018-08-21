@@ -30,7 +30,7 @@ from pydicom.data import get_testdata_files
 
 # session:
 # upload_zip: myZipFile
-# show_dcm: myfile
+# show_dcm/ manage_show_zip: myfile
 
 def home(request):
     documents = Document.objects.all()
@@ -354,7 +354,7 @@ def manage_dcm(request):
 
     # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-
+    # remove selected files
     if request.method == 'POST':
         selected = request.POST.getlist('selected')
         result=''
@@ -480,18 +480,30 @@ def manage_show_zip(request):
     print(os.getcwd())
 
     # get the file name user clicked from template
-    myZipFile = request.GET.get('file', None)
-    print('myZipFile: '+myZipFile)
+    myfile = request.GET.get('file', None)
+    request.session['myfile'] = myfile
+    print('myfile: '+myfile)
     
-    zipFolder = list(myZipFile)[:-4] # remove '.zip'
+    zipFolder = list(myfile)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
     print('zipFolder: '+zipFolder)
     zipFilePath = 'media/ZIP/' + zipFolder
 
     response={
-        'myZipFile': myZipFile,
+        'myfile': myfile,
         'zipFilePath': zipFilePath,
     }
+
+    # remove selected files
+    if request.method == 'POST':
+        selected = request.POST.getlist('selected')
+        result=''
+        response={}
+        for files in selected:
+            os.remove('media/ZIP/' + files)            
+            result+=myfile + ' '
+            response['result'] = result
+        return render(request, 'core/result.html', response)
 
     # directory tree
     dir_tree = []
@@ -515,14 +527,19 @@ def manage_show_zip(request):
     file_dir_list = zip(dir_tree, file_tree)
     response['file_dir_list'] = file_dir_list
 
-    response['uploaded_file_url'] = myZipFile
+    response['uploaded_file_url'] = myfile
     
     return render(request, 'core/manage_show_zip.html', response)
 
 def rename(request):
-    # get file name from show_DCM
+    # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
-    fileName = list(myfile)[:-4] # remove '.dcm'
+    # get file type (dcm or zip)
+    fileType = list(myfile)[-3:]
+    fileType = ''.join(fileType)
+    print(fileType)
+    # remove '.dcm'
+    fileName = list(myfile)[:-4]
     fileName = ''.join(fileName)
     myReport = fileName + '_report.jpg'
 
@@ -532,14 +549,23 @@ def rename(request):
         if form.is_valid():
             name=form.cleaned_data['rename']
             response['result']=name
-            os.rename('media/DCM/' + myfile, 'media/DCM/' + name)
+            folderName = list(name)[:-4]
+            folderName = ''.join(folderName)
 
-            # check if the file has corresponding report, if yes, rename as well
-            dir_list = os.listdir('media/DCM/JPG/')
-            if myReport in dir_list:
-                name = list(name)[:-4] # remove '.dcm'
-                name = ''.join(name)
-                os.rename('media/DCM/JPG/' + myReport, 'media/DCM/JPG/' + name + '_report.jpg')
+            if fileType.startswith('zip'):
+                os.rename('media/ZIP/' + myfile, 'media/ZIP/' + name)
+                os.rename('media/ZIP/' + fileName, 'media/ZIP/' + folderName)
+
+            elif fileType.startswith('dcm'):
+                os.rename('media/DCM/' + myfile, 'media/DCM/' + name)
+
+                # check if the file has corresponding report, if yes, rename as well
+                dir_list = os.listdir('media/DCM/JPG/')
+                if myReport in dir_list:
+                    name = list(name)[:-4] # remove '.dcm'
+                    name = ''.join(name)
+                    os.rename('media/DCM/JPG/' + myReport, 'media/DCM/JPG/' + name + '_report.jpg')
+
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
