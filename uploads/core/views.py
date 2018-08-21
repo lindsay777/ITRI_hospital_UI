@@ -359,12 +359,30 @@ def manage_dcm(request):
     # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
 
+    if request.method == 'POST':
+        selected = request.POST.getlist('selected')
+        result=''
+        response={}
+        for files in selected:
+            os.remove('media/DCM/' + files)
+
+            # check if the file has corresponding report, if yes, remove as well  
+            fileName = list(files)[:-4] # remove '.dcm'
+            fileName = ''.join(fileName)
+            myReport = fileName + '_report.jpg'
+            dir_list = os.listdir('media/DCM/JPG/')
+            if myReport in dir_list:
+                os.remove('media/DCM/JPG/' + myReport)
+            
+            result+=fileName + ' '
+            response['result'] = result
+        return render(request, 'core/result.html', response)
+
     return render(request, 'core/manage_dcm.html', {
         'onlyfiles': onlyfiles,
     })
 
 def show_dcm(request):
-    print(os.getcwd())
 
     # get the file user clicked from template
     myfile = request.GET.get('file', None)
@@ -433,7 +451,6 @@ def show_dcm(request):
     elif fileName.startswith('IMG'):      
         if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
-    print(response)
     return render(request, 'core/show_dcm.html', response)
 
 def manage_zip(request):
@@ -450,6 +467,9 @@ def manage_zip(request):
 def rename(request):
     # get file name from show_DCM
     myfile = request.session['myfile']
+    fileName = list(myfile)[:-4] # remove '.dcm'
+    fileName = ''.join(fileName)
+    myReport = fileName + '_report.jpg'
 
     if request.method == 'POST':
         form=nameForm(request.POST)
@@ -458,8 +478,13 @@ def rename(request):
             name=form.cleaned_data['rename']
             response['result']=name
             os.rename('media/DCM/' + myfile, 'media/DCM/' + name)
-            # if startswith
-            # os.rename('media/DCM/JPG/' + myfile, 'media/DCM/JPG/' + name)
+
+            # check if the file has corresponding report, if yes, rename as well
+            dir_list = os.listdir('media/DCM/JPG/')
+            if myReport in dir_list:
+                name = list(name)[:-4] # remove '.dcm'
+                name = ''.join(name)
+                os.rename('media/DCM/JPG/' + myReport, 'media/DCM/JPG/' + name + '_report.jpg')
         return render(request, 'core/result.html', response)
     else:
         return render(request, 'core/result.html')
