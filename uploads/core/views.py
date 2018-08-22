@@ -19,7 +19,7 @@ import shutil
 import re
 from pydicom.data import get_testdata_files
 
-# TODO: 
+# TODO
 # 2. warnings for same filenames
 
 # variable naming principle:
@@ -60,7 +60,6 @@ def simple_upload(request):
         for file_name in zip_list:
             if ".dcm" in file_name.lower():
                 lstFilesDCM.append(os.path.join(os.getcwd(), folderPath, file_name))
-        print(lstFilesDCM[0] + '\n')
 
         # read IMG00000
         dataset = pydicom.dcmread(lstFilesDCM[0]) 
@@ -204,9 +203,6 @@ def upload_zip(request):
         fs = FileSystemStorage()
         myZipFile = fs.save(myfile.name, myfile)
         request.session['myZipFile']=myZipFile
-        print('myZipFile:' + myZipFile)
-
-        print(os.getcwd())
 
         # move file form media/ to media/dcm/ folder
         shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
@@ -219,7 +215,6 @@ def upload_zip(request):
         # get folder name of the extracted zip file
         zipFolder = list(myZipFile)[:-4] #remove '.zip'
         zipFolder = ''.join(zipFolder)
-        print('zipFolder: '+zipFolder)
         zipFilePath = 'media/ZIP/' + zipFolder
 
         response={
@@ -256,23 +251,17 @@ def upload_zip(request):
         return render(request, 'core/upload_zip.html')
 
 def show_zip(request):
-    print('----show zip----')
-    print(os.getcwd())
     zipFolder = request.session['myZipFile']
     zipFolder = list(zipFolder)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
-    print('zipFolder: '+zipFolder)
 
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
-    print('myfile: '+myfile)
 
     if myfile.startswith('STR'):
         filePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + myfile
-        print('STRfilePath: '+ filePath)
     elif myfile.startswith('IMG'):
         filePath = 'media/ZIP/' + zipFolder + '/SDY00000/SRS00000/' + myfile
-        print('IMGfilePath: '+ filePath)
 
     # read file
     dataset = pydicom.dcmread(filePath) 
@@ -332,7 +321,6 @@ def show_zip(request):
         if cv2.imwrite('media/ZIP/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             response['report'] = '/media/ZIP/JPG/' + fileName + '_report.jpg'
 
-    print(response)
     return render(request, 'core/show_zip.html', response)
 
 def model_form_upload(request):
@@ -357,20 +345,20 @@ def manage_dcm(request):
     # remove selected files
     if request.method == 'POST':
         selected = request.POST.getlist('selected')
-        result=''
-        response={}
+        result = '' 
+        response = {}
         for files in selected:
-            os.remove('media/DCM/' + files)
+            os.remove(folderPath + files)
 
             # check if the file has corresponding report, if yes, remove as well  
             fileName = list(files)[:-4] # remove '.dcm'
             fileName = ''.join(fileName)
             myReport = fileName + '_report.jpg'
-            dir_list = os.listdir('media/DCM/JPG/')
+            dir_list = os.listdir(folderPath + 'JPG/')
             if myReport in dir_list:
-                os.remove('media/DCM/JPG/' + myReport)
+                os.remove(folderPath + 'JPG/' + myReport)
             
-            result+=fileName + ' '
+            result += fileName + ' '
             response['result'] = result
         return render(request, 'core/result.html', response)
 
@@ -476,23 +464,16 @@ def manage_zip(request):
     })
 
 def manage_show_zip(request):
-    print('----manage show zip----')
-    print(os.getcwd())
-
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
     request.session['myfile'] = myfile
-    print('myfile: '+myfile)
     zipFilePath = 'media/ZIP/' + myfile
     request.session['filePath'] = zipFilePath
-    
+
     zipFolder = list(myfile)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
-    print('zipFolder: '+zipFolder)
     zipFolderPath = 'media/ZIP/' + zipFolder
     
-    
-
     response={
         'myfile': myfile,
         'zipFilePath': zipFilePath,
@@ -609,7 +590,6 @@ def download(request):
     # get file type (dcm or zip)
     fileType = list(myfile)[-3:]
     fileType = ''.join(fileType)
-    print(fileType)
 
     if request.method == 'POST':
         if os.path.exists(filePath):
