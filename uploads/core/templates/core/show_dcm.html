@@ -22,19 +22,36 @@
   </form>
 
   <li>id: {{ pid }}</li>
+  <li>name: {{ name }}</li>
   <li>sex: {{ sex }}</li>
   <li>age: {{ age }}</li>
   <li>mp: {{ mp }}</li>
 
-  {% if zscore and tscore %}
-    <li>Z-score: {{ zscore }}</li>
-    <li>T-score: {{ tscore }}</li>
-  {% endif %}  
+  {% if APSpine %}
+    <li>APSpine: {{ APSpine }}</li>
+  {% endif %}
 
+  {% if DualFemur %}
+    <li>DualFemur: {{ DualFemur }}</li>
+  {% endif %}
+
+  {% if fracture %}
+    <li>fracture: {{ fracture }}</li>
+  {% endif %}
+
+  {% if combination and T7%}
+    <li>combination: {{ combination }}</li>
+    <li>T7: {{ T7 }}</li>
+  {% endif %}
+
+  {% if lva %}
+    <li>LVA: {{ lva }}</li>
+  {% endif %}
+  
   {% if report %}
     <li>report: {{ report }}</li>
     <img src="{{ report }}" alt="My image">
-  {% endif %} 
+  {% endif %}
 
   <p><a href="{% url 'manage_dcm' %}">Return to Manage DCM</a></p>
   <p><a href="{% url 'home' %}">Return to home</a></p>
