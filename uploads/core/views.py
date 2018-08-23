@@ -19,9 +19,6 @@ import shutil
 import re
 from pydicom.data import get_testdata_files
 
-# TODO
-# 2. warnings for same filenames
-
 # variable naming principle:
 # myfile: .dcm
 # myZipFile: .zip
@@ -174,6 +171,7 @@ def upload_dcm(request):
                 'sex': sex,
                 'age': age,
                 'mp': mp,
+                'dataset': dataset,
             } 
 
             # ----- get image report from IMG file -----  
@@ -378,6 +376,7 @@ def show_zip(request):
         'sex': sex,
         'age': age,
         'mp': mp,
+        'dataset': dataset,
     }
 
      # ----- get image report from IMG file -----  
@@ -555,6 +554,7 @@ def show_dcm(request):
         'sex': sex,
         'age': age,
         'mp': mp,
+        'dataset': dataset,
     }
 
     # ----- get image report from IMG file -----  
@@ -786,6 +786,14 @@ def remove(request):
         # if the file is a dcm, remove dcm
         elif fileType.startswith('dcm'):
             os.remove('media/DCM/' + myfile)
+            dir_list = os.listdir('media/DCM/JPG/')
+            fileName = list(myfile)[:-4]
+            fileName = ''.join(fileName)
+            reportName = fileName + '_report.jpg'
+            print(dir_list)
+            print(reportName)
+            if reportName in dir_list:
+                os.remove('media/DCM/JPG/' + reportName)
 
         return render(request, 'core/result.html', response)
     else:
