@@ -526,6 +526,7 @@ def show_dcm(request):
 
     # read file
     dataset = pydicom.dcmread(filePath) 
+    #TODO: txt
 
     # get patient's ID
     pid = dataset.PatientID
