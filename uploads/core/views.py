@@ -129,130 +129,141 @@ def upload_dcm(request):
         myfile = fs.save(myfile.name, myfile)
         fileName = list(myfile)[:-4] # remove '.dcm'
         fileName = ''.join(fileName)
+    
+        # get file list in the folder
+        onlyfiles = [f for f in listdir('media/DCM/') if isfile(join('media/DCM/', f))]
+        # if the file name already exists, show warning
+        if myfile in onlyfiles:
+            os.remove('media/'+myfile)
+            response = {
+                'warning':myfile
+            }
+            return render(request, 'core/upload_dcm.html', response)
+        
+        else:
+            # move file form media/ to media/dcm/ folder
+            shutil.move('media/'+myfile, 'media/DCM/'+myfile)
+            dcmFilePath = 'media/DCM/' + myfile
 
-        # move file form media/ to media/dcm/ folder
-        shutil.move('media/'+myfile, 'media/DCM/'+myfile)
-        dcmFilePath = 'media/DCM/' + myfile
+            # read file
+            dataset = pydicom.dcmread(dcmFilePath) 
 
-        # read file
-        dataset = pydicom.dcmread(dcmFilePath) 
+            # get patient's ID
+            pid = dataset.PatientID
+            # get name
+            name = dataset.PatientName
+            # get sex
+            sex = dataset.PatientSex
+            # get age (ex. 063Y->63)
+            age_list = list(dataset.PatientAge)
+            del age_list[-1]
+            if age_list[0]=='0':
+                del age_list[0]
+            age = ''.join(age_list)
+            # get MP
+            PatientName = str(dataset.PatientName)
+            if "(PM" in PatientName:
+                PatientName = PatientName.split('(')[1].split(')')[0]
+                name_list = list(PatientName)
+                del name_list[0:2]
+                mp = ''.join(name_list)
 
-        # get patient's ID
-        pid = dataset.PatientID
-        # get name
-        name = dataset.PatientName
-        # get sex
-        sex = dataset.PatientSex
-        # get age (ex. 063Y->63)
-        age_list = list(dataset.PatientAge)
-        del age_list[-1]
-        if age_list[0]=='0':
-            del age_list[0]
-        age = ''.join(age_list)
-        # get MP
-        PatientName = str(dataset.PatientName)
-        if "(PM" in PatientName:
-            PatientName = PatientName.split('(')[1].split(')')[0]
-            name_list = list(PatientName)
-            del name_list[0:2]
-            mp = ''.join(name_list)
+            response={
+                'pid': pid,
+                'name': name,
+                'sex': sex,
+                'age': age,
+                'mp': mp,
+            } 
 
-        response={
-            'pid': pid,
-            'name': name,
-            'sex': sex,
-            'age': age,
-            'mp': mp,
-        } 
-
-        # ----- get image report from IMG file -----  
-        # pydicom example: https://goo.gl/SMyny4
-        try:
-            dataset.pixel_array
-            if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
-                # must add a '/' ahead
-                response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
+            # ----- get image report from IMG file -----  
+            # pydicom example: https://goo.gl/SMyny4
+            try:
+                dataset.pixel_array
+                if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
+                    # must add a '/' ahead
+                    response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
 
 
-        # -------- get value from STR file --------
-        except:   
-            comment = dataset.ImageComments
-            comment = comment.split('><')
+            # -------- get value from STR file --------
+            except:   
+                comment = dataset.ImageComments
+                comment = comment.split('><')
 
-            match = [s for s in comment if "SCAN type" in s]
-            length = len(match)
+                match = [s for s in comment if "SCAN type" in s]
+                length = len(match)
 
-            # 02 frax: major fracture
-            if length == 0:
-                keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
-                fracture = ''.join(keyword)
-                fracture = fracture.split('</')[0].split('>')[1]
-                response['fracture'] = fracture
-            # 00 01 03 04
-            else:
-                match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
-                zscore=[]
-                for substring in match_zscore:
-                    substring = substring.split('</')[0].split('>')[1]
-                    zscore.append(substring)
-                response['zscore'] = zscore
+                # 02 frax: major fracture
+                if length == 0:
+                    keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
+                    fracture = ''.join(keyword)
+                    fracture = fracture.split('</')[0].split('>')[1]
+                    response['fracture'] = fracture
+                # 00 01 03 04
+                else:
+                    match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
+                    zscore=[]
+                    for substring in match_zscore:
+                        substring = substring.split('</')[0].split('>')[1]
+                        zscore.append(substring)
+                    response['zscore'] = zscore
 
-                match_tscore = [s for s in comment if "BMD_TSCORE" in s]
-                tscore=[]
-                for substring in match_tscore:
-                    substring = substring.split('</')[0].split('>')[1]
-                    tscore.append(substring)
-                response['tscore'] = tscore
+                    match_tscore = [s for s in comment if "BMD_TSCORE" in s]
+                    tscore=[]
+                    for substring in match_tscore:
+                        substring = substring.split('</')[0].split('>')[1]
+                        tscore.append(substring)
+                    response['tscore'] = tscore
 
-                match_region = [s for s in comment if "ROI region" in s]
-                region=[]
-                for substring in match_region:
-                    substring = substring.split('"')[1]
-                    region.append(substring)
-                response['region'] = region
-                
-                # 00 01 04
-                if length == 1:
-                    scanType = ''.join(match)
-                    scanType = scanType.split('"')[1]
-                    response['scanType'] = scanType
+                    match_region = [s for s in comment if "ROI region" in s]
+                    region=[]
+                    for substring in match_region:
+                        substring = substring.split('"')[1]
+                        region.append(substring)
+                    response['region'] = region
+                    
+                    # 00 01 04
+                    if length == 1:
+                        scanType = ''.join(match)
+                        scanType = scanType.split('"')[1]
+                        response['scanType'] = scanType
 
-                    # 04
-                    if scanType == 'LVA':
-                        keyword = [s for s in comment if "DEFORMITY" in s]
-                        lva=[]
-                        for substring in keyword:
-                            substring = substring.split('</')[0].split('>')[1]
-                            lva.append(substring)
-                        while 'None' in lva:
-                            lva.remove(substring)
-                        response['lva'] = lva
+                        # 04
+                        if scanType == 'LVA':
+                            keyword = [s for s in comment if "DEFORMITY" in s]
+                            lva=[]
+                            for substring in keyword:
+                                substring = substring.split('</')[0].split('>')[1]
+                                lva.append(substring)
+                            while 'None' in lva:
+                                lva.remove(substring)
+                            response['lva'] = lva
 
-                    # 00
-                    elif scanType == 'AP Spine':
-                        APSpine = list(zip(region, tscore, zscore))
-                        response['APSpine'] = APSpine
+                        # 00
+                        elif scanType == 'AP Spine':
+                            APSpine = list(zip(region, tscore, zscore))
+                            response['APSpine'] = APSpine
 
-                    # 01
-                    elif scanType == 'DualFemur':
-                        DualFemur = list(zip(region, tscore, zscore))
-                        response['DualFemur'] = DualFemur
+                        # 01
+                        elif scanType == 'DualFemur':
+                            DualFemur = list(zip(region, tscore, zscore))
+                            response['DualFemur'] = DualFemur
 
-                    else:
-                        print('error input')
+                        else:
+                            print('error input')
 
-                # 03 combination: region tscore zscore
-                elif length == 3:
-                    del region[1:4]
-                    combination = list(zip(region, tscore, zscore))
-                    response['combination'] = combination
-                    # get LVA
-                    T7 = [s for s in comment if "DEFORMITY" in s]
-                    T7 = ''.join(T7)
-                    T7 = T7.split('</')[0].split('>')[1]
-                    response['T7'] = T7   
+                    # 03 combination: region tscore zscore
+                    elif length == 3:
+                        del region[1:4]
+                        combination = list(zip(region, tscore, zscore))
+                        response['combination'] = combination
+                        # get LVA
+                        T7 = [s for s in comment if "DEFORMITY" in s]
+                        T7 = ''.join(T7)
+                        T7 = T7.split('</')[0].split('>')[1]
+                        response['T7'] = T7   
 
-        uploaded_file_url = fs.url(myfile)
+            uploaded_file_url = fs.url(myfile)
         response['uploaded_file_url'] = uploaded_file_url
 
         return render(request, 'core/upload_dcm.html', response)
@@ -266,49 +277,60 @@ def upload_zip(request):
         myZipFile = fs.save(myfile.name, myfile)
         request.session['myZipFile']=myZipFile
 
-        # move file form media/ to media/dcm/ folder
-        shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
-        # read zip file
-        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
-        # extract zip file
-        for file in zip_file.namelist():
-            zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
-        
         # get folder name of the extracted zip file
         zipFolder = list(myZipFile)[:-4] #remove '.zip'
         zipFolder = ''.join(zipFolder)
         zipFilePath = 'media/ZIP/' + zipFolder
+        
+        # get file list in the folder
+        onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
+        # if the file name already exists, show warning
+        if myZipFile in onlyfiles:
+            os.remove('media/'+myZipFile)
+            response = {
+                'warning':myZipFile
+            }
+            return render(request, 'core/upload_zip.html', response)
+        
+        else: 
+            # move file form media/ to media/zip/ folder
+            shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+            # read zip file
+            zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
+            # extract zip file
+            for file in zip_file.namelist():
+                zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
 
-        response={
-            'myZipFile': myZipFile,
-            'zipFilePath': zipFilePath,
-        }
+            response={
+                'myZipFile': myZipFile,
+                'zipFilePath': zipFilePath,
+            }
 
-        # directory tree
-        dir_tree = []
-        # contain '.dcm' files 
-        file_tree = []
-        # traverse root directory, and list directories as dirs and files as files
-        for root, dirs, files in os.walk(zipFilePath):
-            path = root.split(os.sep)
-            line = ((len(path) - 1) * '---', os.path.basename(root))
-            line = ''.join(line)
-            dir_tree.append(line)
-            file_tree.append('')
-            for file in files:
-                line = (len(path) * '---', file)
+            # directory tree
+            dir_tree = []
+            # contain '.dcm' files 
+            file_tree = []
+            # traverse root directory, and list directories as dirs and files as files
+            for root, dirs, files in os.walk(zipFilePath):
+                path = root.split(os.sep)
+                line = ((len(path) - 1) * '---', os.path.basename(root))
                 line = ''.join(line)
                 dir_tree.append(line)
-                file_tree.append(file)
-        response['dir_tree'] = dir_tree
-        response['file_tree'] = file_tree
-        # zip so that templates can show
-        file_dir_list = zip(dir_tree, file_tree)
-        response['file_dir_list'] = file_dir_list
+                file_tree.append('')
+                for file in files:
+                    line = (len(path) * '---', file)
+                    line = ''.join(line)
+                    dir_tree.append(line)
+                    file_tree.append(file)
+            response['dir_tree'] = dir_tree
+            response['file_tree'] = file_tree
+            # zip so that templates can show
+            file_dir_list = zip(dir_tree, file_tree)
+            response['file_dir_list'] = file_dir_list
 
-        response['uploaded_file_url'] = fs.url(myZipFile)
-        
-        return render(request, 'core/upload_zip.html', response)
+            response['uploaded_file_url'] = fs.url(myZipFile)
+            
+            return render(request, 'core/upload_zip.html', response)
     else: 
         return render(request, 'core/upload_zip.html')
 
@@ -436,11 +458,8 @@ def show_zip(request):
 
             # 03 combination: region tscore zscore
             elif length == 3:
-                print('<3')
                 del region[1:4]
-                print(region)
                 combination = list(zip(region, tscore, zscore))
-                print(combination)
                 response['combination'] = combination
                 # get LVA
                 T7 = [s for s in comment if "DEFORMITY" in s]
@@ -546,7 +565,6 @@ def show_dcm(request):
         if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             # must add a '/' ahead
             response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
-            print('fileName')
 
     # -------- get value from STR file --------
     except:
@@ -617,11 +635,8 @@ def show_dcm(request):
 
             # 03 combination: region tscore zscore
             elif length == 3:
-                print('<3')
                 del region[1:4]
-                print(region)
                 combination = list(zip(region, tscore, zscore))
-                print(combination)
                 response['combination'] = combination
                 # get LVA
                 T7 = [s for s in comment if "DEFORMITY" in s]
