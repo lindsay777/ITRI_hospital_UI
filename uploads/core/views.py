@@ -525,8 +525,11 @@ def show_dcm(request):
     request.session['filePath'] = filePath
 
     # read file
-    dataset = pydicom.dcmread(filePath) 
-    #TODO: txt
+    dataset = pydicom.dcmread(filePath)
+    f = open('media/dataset.txt', 'w') 
+    f.write(dataset)
+    f.close()
+    #TODO: txt https://goo.gl/DZteRj
 
     # get patient's ID
     pid = dataset.PatientID
