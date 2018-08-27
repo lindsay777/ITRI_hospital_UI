@@ -526,12 +526,15 @@ def show_dcm(request):
 
     # read file
     dataset = pydicom.dcmread(filePath)
+    datasetstr = str(dataset)
 
     if dataset is not None:
-        f = open('media/dataset.txt', 'r+') 
-        f.write('dataset')
-        f.close()
-    #TODO: txt https://goo.gl/DZteRj
+        f = open('dataset.txt', 'w+') 
+        f.write(datasetstr)
+
+    f = open('dataset.txt','r')
+    datasetstr = f.read()
+    print(datasetstr)
 
     # get patient's ID
     pid = dataset.PatientID
@@ -560,7 +563,7 @@ def show_dcm(request):
         'sex': sex,
         'age': age,
         'mp': mp,
-        'dataset': dataset,
+        'dataset': datasetstr,
     }
 
     # ----- get image report from IMG file -----  
@@ -817,10 +820,11 @@ def check_apspine(request):
 
     # zip
     merge = list(zip(region, tscore, zscore))
-    # merge
-    # TODO: outcome could be multiple
-    machineOutcome = str(merge[4][0])
-    print(machineOutcome)
+    # get the outcome from the machine
+    machineMerge = merge[4:]
+    machineOutcome = []
+    for substring in machineMerge:
+        machineOutcome.append(substring[0])
     response['machineOutcome'] = machineOutcome
     merge = merge[:4]
 
@@ -868,10 +872,9 @@ def check_apspine(request):
     else:
         outcome = str(start + '-' + end + '(' + diffRegion + ')')
     response['outcome'] = outcome
-    print(outcome)
     
-    # TODO: could be multiple
-    if machineOutcome == outcome:
+    # check the result to determine re-gen or not
+    if outcome in machineOutcome:
         response['result'] = 'Correct, go to the next step.'
         # Obtain LVA
         lvaFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00004.dcm'
