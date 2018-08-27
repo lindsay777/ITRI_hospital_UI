@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+  <li>id: {{ pid }}</li>
+  <li>name: {{ name }}</li>
+  <li>sex: {{ sex }}</li>
+  <li>age: {{ age }}</li>
+  <li>mp: {{ mp }}</li>
+
+  <li>tscore: {{ tscore }}</li>
+  <li>zscore: {{ zscore }}</li>
+  <li>region: {{ region }}</li>
+
+  <li>group: {{ group }}</li>
+  <li>machine outcome: {{ machineOutcome }}</li>
+
+  <li>dist1: {{ dist1 }}</li>
+  <li>dist2: {{ dist2 }}</li>
+
+  <li>regionFilter: {{ regionFilter }}</li>
+  <li>outcome: {{ outcome }}</li>
+
+  <li>result: {{ result }}</li>
+
+
+  <p><a href="{% url 'home' %}">Return to home</a></p>
+{% endblock %}

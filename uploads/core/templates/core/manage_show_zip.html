@@ -28,6 +28,12 @@
 
   <li>zipFileName: {{ myZipFile }}</li>
   <li>zipFilePath: {{ zipFilePath }}</li>
+
+  <form action="/uploads/checkAPSpine/" method="post">
+    {% csrf_token %}
+    <input type="submit" value="check APSpine">
+  </form>
+
   <li>dir_tree:</li>
   
   {% for dir, file in file_dir_list %}

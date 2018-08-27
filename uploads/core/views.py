@@ -729,6 +729,152 @@ def manage_show_zip(request):
     
     return render(request, 'core/manage_show_zip.html', response)
 
+def check_apspine(request):
+    # get the file name user clicked from template
+    myfile = request.session['myfile']
+    fileName = list(myfile)[:-4] # remove '.zip'
+    fileName = ''.join(fileName)
+    apspineFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00000.dcm'
+
+    # read file
+    dataset = pydicom.dcmread(apspineFilePath)
+
+    response={}
+    comment = dataset.ImageComments
+    comment = comment.split('><')
+
+     # get patient's ID
+    pid = dataset.PatientID
+    # get name
+    name = dataset.PatientName
+    # get sex
+    sex = dataset.PatientSex
+    # get age (ex. 063Y->63)
+    age_list = list(dataset.PatientAge)
+    del age_list[-1]
+    if age_list[0]=='0':
+        del age_list[0]
+    age = int(''.join(age_list))
+    # get MP
+    PatientName = str(dataset.PatientName)
+    if "(PM" in PatientName:
+        PatientName = PatientName.split('(')[1].split(')')[0]
+        name_list = list(PatientName)
+        del name_list[0:2]
+        mp = ''.join(name_list)
+
+    response={
+        'pid': pid,
+        'name': name,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+    }
+
+    match_tscore = [s for s in comment if "BMD_TSCORE" in s]
+    tscore=[]
+    for substring in match_tscore:
+        substring = substring.split('</')[0].split('>')[1]
+        tscore.append(substring)
+    response['tscore'] = tscore
+
+    match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
+    zscore=[]
+    for substring in match_zscore:
+        substring = substring.split('</')[0].split('>')[1]
+        zscore.append(substring)
+    response['zscore'] = zscore
+
+    match_region = [s for s in comment if "ROI region" in s]
+    region=[]
+    for substring in match_region:
+        substring = substring.split('"')[1]
+        region.append(substring)
+    response['region'] = region
+
+    # decide group
+    if age<20:
+        group = 'Z'
+    elif 20<=age<50:
+        if mp == '':
+            group = 'Z'
+        else:
+            if sex == 'F':
+                group = 'T'
+            else:
+                group = 'Z'
+    else:
+        if mp == '':
+            if sex == 'F':
+                group = 'Z'
+            else:
+                group = 'T'
+        else:
+            group = 'T'
+    response['group'] = group
+
+    # zip
+    merge = list(zip(region, tscore, zscore))
+    # merge
+    machineOutcome = str(merge[4][0])
+    print(machineOutcome)
+    response['machineOutcome'] = machineOutcome
+    merge = merge[:4]
+
+    # sort(according to tscore or zscore)
+    def getT(item):
+        return float(item[1])
+    def getZ(item):
+        return float(item[2])
+    if group == 'T':
+        merge = sorted(merge, key=getT)
+        # get mean and absolute value
+        mean = (float(merge[1][1]) + float(merge[2][1]))/2
+        dist1 = abs(float(merge[0][1]) - mean)
+        dist2 = abs(mean - float(merge[3][1]))
+        response['dist1'] = dist1
+        response['dist2'] = dist2
+    elif group:
+        merge = sorted(merge, key=getZ)
+        # get mean and absolute value
+        mean = (float(merge[1][2]) + float(merge[2][2]))/2
+        dist1 = abs(float(merge[0][2]) - mean)
+        dist2 = abs(mean - float(merge[3][2]))
+        response['dist1'] = dist1
+        response['dist2'] = dist2
+
+    # regionFilter: remove outlier
+    regionFilter = ['L1','L2','L3','L4']
+    if dist1 > 1:
+        regionFilter.remove(merge[0][0])
+    if dist2 > 1:
+        regionFilter.remove(merge[3][0])
+    response['regionFilter'] = regionFilter
+
+    # deal with value in '()'
+    start = regionFilter[0]
+    end = regionFilter[-1]
+    region = ['L1','L2','L3','L4']
+    index1 = region.index(start)
+    index2 = region.index(end)
+    region = region[index1:index2+1]
+    diffRegion = ','.join([item for item in region if item not in regionFilter])
+
+    if diffRegion == '':
+        outcome = str(start + '-' + end)
+    else:
+        outcome = str(start + '-' + end + '(' + diffRegion + ')')
+    response['outcome'] = outcome
+    print(outcome)
+    
+
+    if machineOutcome == outcome:
+        response['result'] = 'Correct, go to the next step.'
+    else:
+        response['result'] = 'Warn!! Please Re-gen.'
+
+    return render(request, 'core/check_apspine.html', response)
+
 def rename(request):
     # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
