@@ -526,9 +526,11 @@ def show_dcm(request):
 
     # read file
     dataset = pydicom.dcmread(filePath)
-    f = open('media/dataset.txt', 'w') 
-    f.write(dataset)
-    f.close()
+
+    if dataset is not None:
+        f = open('media/dataset.txt', 'r+') 
+        f.write('dataset')
+        f.close()
     #TODO: txt https://goo.gl/DZteRj
 
     # get patient's ID
@@ -743,7 +745,7 @@ def check_apspine(request):
     comment = dataset.ImageComments
     comment = comment.split('><')
 
-     # get patient's ID
+    # get patient's ID
     pid = dataset.PatientID
     # get name
     name = dataset.PatientName
@@ -816,6 +818,7 @@ def check_apspine(request):
     # zip
     merge = list(zip(region, tscore, zscore))
     # merge
+    # TODO: outcome could be multiple
     machineOutcome = str(merge[4][0])
     print(machineOutcome)
     response['machineOutcome'] = machineOutcome
@@ -867,9 +870,56 @@ def check_apspine(request):
     response['outcome'] = outcome
     print(outcome)
     
-
+    # TODO: could be multiple
     if machineOutcome == outcome:
         response['result'] = 'Correct, go to the next step.'
+        # Obtain LVA
+        lvaFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00004.dcm'
+        # read file
+        dataset = pydicom.dcmread(lvaFilePath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        # get region
+        region4 = [s for s in comment if "ROI region" in s]
+        region=[]
+        for substring in region4:
+            substring = substring.split('"')[1]
+            region.append(substring)
+        # get deformity    
+        keyword4 = [s for s in comment if "DEFORMITY" in s]
+        lva=[]
+        for substring in keyword4:
+            substring = substring.split('</')[0].split('>')[1]
+            lva.append(substring)
+        # zip two feature
+        merge = list(zip(region, lva))
+        # get outcome
+        grade = [s for s in merge if s[1] != 'None']
+        response['grade'] = grade
+
+
+        # Obtain frax
+        fraxFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00002.dcm'
+        # read file
+        dataset = pydicom.dcmread(fraxFilePath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        # get major frac
+        majorFrac = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
+        majorFrac = ''.join(majorFrac)
+        majorFrac = majorFrac.split('</')[0].split('>')[1]
+        response['majorFrac'] = majorFrac
+        #get hip frac
+        hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
+        hipFrac = ''.join(hipFrac)
+        hipFrac = hipFrac.split('</')[0].split('>')[1]
+        response['hipFrac'] = hipFrac
+
+        return render(request, 'core/check_apspine.html', response)
+
+
     else:
         response['result'] = 'Warn!! Please Re-gen.'
 

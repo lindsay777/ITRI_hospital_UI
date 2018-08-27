@@ -24,6 +24,18 @@
 
   <li>result: {{ result }}</li>
 
+  {% if grade %}
+    <li>grade: {{ grade }}</li>
+  {% endif %}
+
+  {% if majorFrac %}
+    <li>majorFrac: {{ majorFrac }}</li>
+  {% endif %}
+
+  {% if hipFrac %}
+    <li>hipFrac: {{ hipFrac }}</li>
+  {% endif %}
+
 
   <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}
