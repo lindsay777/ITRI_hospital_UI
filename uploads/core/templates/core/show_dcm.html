@@ -47,13 +47,14 @@
   {% if lva %}
     <li>LVA: {{ lva }}</li>
   {% endif %}
-
-  <li>dataset: {{ dataset }}</li>
   
   {% if report %}
     <li>report: {{ report }}</li>
     <img src="{{ report }}" alt="My image">
   {% endif %}
+  
+  <li>dataset:</li>
+  <pre>{{ dataset }}</pre>
 
   <p><a href="{% url 'manage_dcm' %}">Return to Manage DCM</a></p>
   <p><a href="{% url 'home' %}">Return to home</a></p>

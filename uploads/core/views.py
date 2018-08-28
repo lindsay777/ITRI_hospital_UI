@@ -182,7 +182,6 @@ def upload_dcm(request):
                     # must add a '/' ahead
                     response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
 
-
             # -------- get value from STR file --------
             except:   
                 comment = dataset.ImageComments
@@ -526,15 +525,6 @@ def show_dcm(request):
 
     # read file
     dataset = pydicom.dcmread(filePath)
-    datasetstr = str(dataset)
-
-    if dataset is not None:
-        f = open('dataset.txt', 'w+') 
-        f.write(datasetstr)
-
-    f = open('dataset.txt','r')
-    datasetstr = f.read()
-    print(datasetstr)
 
     # get patient's ID
     pid = dataset.PatientID
@@ -563,7 +553,7 @@ def show_dcm(request):
         'sex': sex,
         'age': age,
         'mp': mp,
-        'dataset': datasetstr,
+        'dataset': dataset,
     }
 
     # ----- get image report from IMG file -----  
@@ -922,7 +912,6 @@ def check_apspine(request):
 
         return render(request, 'core/check_apspine.html', response)
 
-
     else:
         response['result'] = 'Warn!! Please Re-gen.'
 
@@ -993,8 +982,6 @@ def remove(request):
             fileName = list(myfile)[:-4]
             fileName = ''.join(fileName)
             reportName = fileName + '_report.jpg'
-            print(dir_list)
-            print(reportName)
             if reportName in dir_list:
                 os.remove('media/DCM/JPG/' + reportName)
 
