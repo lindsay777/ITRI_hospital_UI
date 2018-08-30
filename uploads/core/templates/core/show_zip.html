@@ -4,40 +4,66 @@
 
 {% block content %}
 
-  <li>id: {{ pid }}</li>
-  <li>name: {{ name }}</li>
-  <li>sex: {{ sex }}</li>
-  <li>age: {{ age }}</li>
-  <li>mp: {{ mp }}</li>
+<li>Patient's Basic Data</li>
+<blockquote>
+  id: {{ pid }}<br>
+  name: {{ name }}<br>
+  sex: {{ sex }}<br>
+  age: {{ age }}<br>
+  mp: {{ mp }}<br>
+</blockquote>
+<br>
+
+<li>Data grab from ITRI system:</li>
+<blockquote>
+  {% if region %}
+    <p>region: {{ region }}</p>
+  {% endif %}
+
+  {% if tscore %}
+    <p>T-score: {{ tscore }}</p>
+  {% endif %}
+
+  {% if zscore %}
+    <p>Z-score: {{ zscore }}</p>
+  {% endif %}
+
+  {% if scanType %}
+    <p>scan type: {{ scanType }}</p>
+  {% endif %}
 
   {% if APSpine %}
-    <li>APSpine: {{ APSpine }}</li>
+    <p>APSpine: {{ APSpine }}</p>
   {% endif %}
 
   {% if DualFemur %}
-    <li>DualFemur: {{ DualFemur }}</li>
+    <p>DualFemur: {{ DualFemur }}</p>
   {% endif %}
 
   {% if fracture %}
-    <li>fracture: {{ fracture }}</li>
+    <p>fracture: {{ fracture }}</p>
   {% endif %}
 
   {% if combination and T7%}
-    <li>combination: {{ combination }}</li>
-    <li>T7: {{ T7 }}</li>
+    <p>combination: {{ combination }}</p>
+    T7: {{ T7 }}
   {% endif %}
 
   {% if lva %}
-    <li>LVA: {{ lva }}</li>
+    <p>LVA: {{ lva }}</p>
   {% endif %}
+</blockquote>
 
-  {% if report %}
-    <li>report: {{ report }}</li>
-    <img src="{{ report }}" alt="My image">
-  {% endif %}
+<blockquote>
+{% if report %}
+  report: {{ report }}<br>
+  <img src="{{ report }}" alt="My image">
+{% endif %}
+</blockquote>
 
-  <li>dataset:</li>
-  <pre>{{ dataset }}</pre>
+<br>
+<li>dataset:</li>
+<pre>{{ dataset }}</pre>
 
-  <p><a href="{% url 'home' %}">Return to home</a></p>
+<p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

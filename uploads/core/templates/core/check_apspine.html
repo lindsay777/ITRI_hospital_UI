@@ -3,38 +3,42 @@
 {% load static %}
 
 {% block content %}
-  <li>id: {{ pid }}</li>
-  <li>name: {{ name }}</li>
-  <li>sex: {{ sex }}</li>
-  <li>age: {{ age }}</li>
-  <li>mp: {{ mp }}</li>
+  <li>Patient's Basic Data</li>
+  <blockquote>
+    id: {{ pid }}<br>
+    name: {{ name }}<br>
+    sex: {{ sex }}<br>
+    age: {{ age }}<br>
+    mp: {{ mp }}<br>
+  </blockquote>
+  <br>
 
-  <li>tscore: {{ tscore }}</li>
-  <li>zscore: {{ zscore }}</li>
-  <li>region: {{ region }}</li>
+  <li>Data grab from ITRI system:</li>
+    <blockquote>
+      region: {{ region }}<br>
+      T-score: {{ tscore }}<br>
+      Z-score: {{ zscore }}<br>
 
-  <li>group: {{ group }}</li>
-  <li>machine outcome: {{ machineOutcome }}</li>
+      group by: {{ group }}-score<br>
+      dist1: {{ dist1 }}<br>
+      dist2: {{ dist2 }}<br>
 
-  <li>dist1: {{ dist1 }}</li>
-  <li>dist2: {{ dist2 }}</li>
+      regionFilter: {{ regionFilter }}<br>
+      SR: {{ machineOutcome }}<br>
+      SRi: {{ outcome }}<br>
+      <br>
+      result: {{ result }}<br>
 
-  <li>regionFilter: {{ regionFilter }}</li>
-  <li>outcome: {{ outcome }}</li>
+      {% if grade %}
+        <li>LVA Grade: {{ grade }}</li>
+      {% endif %}
 
-  <li>result: {{ result }}</li>
+      {% if majorFrac and hipFrac%}
+        <li>Major Osteoporotic Fracture: {{ majorFrac }}</li>
+        <li>Hip Fracture: {{ hipFrac }}</li>
+      {% endif %}
 
-  {% if grade %}
-    <li>grade: {{ grade }}</li>
-  {% endif %}
-
-  {% if majorFrac %}
-    <li>majorFrac: {{ majorFrac }}</li>
-  {% endif %}
-
-  {% if hipFrac %}
-    <li>hipFrac: {{ hipFrac }}</li>
-  {% endif %}
+    </blockquote>
 
   <p><a href="{% url 'manage_zip' %}">manage uploaded ZIP files</a></p>
   <p><a href="{% url 'home' %}">Return to home</a></p>

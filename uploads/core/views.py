@@ -29,6 +29,11 @@ from pydicom.data import get_testdata_files
 # upload_zip: myZipFile
 # show_dcm/ manage_show_zip: myfile
 
+#TODO: TBS
+#TODO: MANAGE_ZIP: multi file process
+#TODO: check if getting data is not from filename
+#template 
+
 def home(request):
     documents = Document.objects.all()
     return render(request, 'core/home.html', { 'documents': documents })
@@ -397,6 +402,7 @@ def show_zip(request):
 
         # 02 frax: major fracture
         if length == 0:
+            response['scanType'] = 'FRAX'
             keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
             fracture = ''.join(keyword)
             fracture = fracture.split('</')[0].split('>')[1]
