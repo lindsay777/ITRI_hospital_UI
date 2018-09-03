@@ -31,7 +31,7 @@ from pydicom.data import get_testdata_files
 
 #TODO: TBS
 #TODO: MANAGE_ZIP: multi file process
-#TODO: check if getting data is not from filename
+#check if getting data is not from filename
 #template 
 
 def home(request):
@@ -124,6 +124,62 @@ def simple_upload(request):
 
     return render(request, 'core/simple_upload.html')
 
+def patient_data(dataset):
+    data={}
+    # get patient's ID
+    pid = dataset.PatientID
+    # get name
+    name = dataset.PatientName
+    # get sex
+    sex = dataset.PatientSex
+    # get age (ex. 063Y->63)
+    age_list = list(dataset.PatientAge)
+    del age_list[-1]
+    if age_list[0]=='0':
+        del age_list[0]
+    age = int(''.join(age_list))
+    # get MP
+    PatientName = str(dataset.PatientName)
+    if "(PM" in PatientName:
+        PatientName = PatientName.split('(')[1].split(')')[0]
+        name_list = list(PatientName)
+        del name_list[0:2]
+        mp = ''.join(name_list)
+    else:
+        mp = ''
+    data={
+        'pid': pid,
+        'name': name,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+    }
+    return data
+
+def t_z_r(comment):
+    comments = {}
+    match_tscore = [s for s in comment if "BMD_TSCORE" in s]
+    tscore=[]
+    for substring in match_tscore:
+        substring = substring.split('</')[0].split('>')[1]
+        tscore.append(substring)
+    comments['tscore'] = tscore
+
+    match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
+    zscore=[]
+    for substring in match_zscore:
+        substring = substring.split('</')[0].split('>')[1]
+        zscore.append(substring)
+    comments['zscore'] = zscore
+
+    match_region = [s for s in comment if "ROI region" in s]
+    region=[]
+    for substring in match_region:
+        substring = substring.split('"')[1]
+        region.append(substring)
+    comments['region'] = region
+    return comments
+
 def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
@@ -150,25 +206,12 @@ def upload_dcm(request):
             # read file
             dataset = pydicom.dcmread(dcmFilePath) 
 
-            # get patient's ID
-            pid = dataset.PatientID
-            # get name
-            name = dataset.PatientName
-            # get sex
-            sex = dataset.PatientSex
-            # get age (ex. 063Y->63)
-            age_list = list(dataset.PatientAge)
-            del age_list[-1]
-            if age_list[0]=='0':
-                del age_list[0]
-            age = ''.join(age_list)
-            # get MP
-            PatientName = str(dataset.PatientName)
-            if "(PM" in PatientName:
-                PatientName = PatientName.split('(')[1].split(')')[0]
-                name_list = list(PatientName)
-                del name_list[0:2]
-                mp = ''.join(name_list)
+            data = patient_data(dataset)
+            pid = data['pid']
+            name = data['name']
+            sex = data['sex']
+            age = data['age']
+            mp = data['mp']
 
             response={
                 'pid': pid,
@@ -201,36 +244,23 @@ def upload_dcm(request):
                     fracture = ''.join(keyword)
                     fracture = fracture.split('</')[0].split('>')[1]
                     response['fracture'] = fracture
-                # 00 01 03 04
+
+                # at least one scanType:
                 else:
-                    match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
-                    zscore=[]
-                    for substring in match_zscore:
-                        substring = substring.split('</')[0].split('>')[1]
-                        zscore.append(substring)
-                    response['zscore'] = zscore
-
-                    match_tscore = [s for s in comment if "BMD_TSCORE" in s]
-                    tscore=[]
-                    for substring in match_tscore:
-                        substring = substring.split('</')[0].split('>')[1]
-                        tscore.append(substring)
+                    comments = t_z_r(comment)
+                    tscore = comments['tscore']
+                    zscore = comments['zscore']
+                    region = comments['region']
                     response['tscore'] = tscore
-
-                    match_region = [s for s in comment if "ROI region" in s]
-                    region=[]
-                    for substring in match_region:
-                        substring = substring.split('"')[1]
-                        region.append(substring)
+                    response['zscore'] = zscore
                     response['region'] = region
                     
-                    # 00 01 04
+                    # classify through scanType
                     if length == 1:
                         scanType = ''.join(match)
                         scanType = scanType.split('"')[1]
                         response['scanType'] = scanType
-
-                        # 04
+                        # LVA
                         if scanType == 'LVA':
                             keyword = [s for s in comment if "DEFORMITY" in s]
                             lva=[]
@@ -240,13 +270,11 @@ def upload_dcm(request):
                             while 'None' in lva:
                                 lva.remove(substring)
                             response['lva'] = lva
-
-                        # 00
+                        # AP Spine
                         elif scanType == 'AP Spine':
                             APSpine = list(zip(region, tscore, zscore))
                             response['APSpine'] = APSpine
-
-                        # 01
+                        # Dual Femur
                         elif scanType == 'DualFemur':
                             DualFemur = list(zip(region, tscore, zscore))
                             response['DualFemur'] = DualFemur
@@ -254,7 +282,7 @@ def upload_dcm(request):
                         else:
                             print('error input')
 
-                    # 03 combination: region tscore zscore
+                    # multi scanType: combination
                     elif length == 3:
                         del region[1:4]
                         combination = list(zip(region, tscore, zscore))
@@ -354,25 +382,12 @@ def show_zip(request):
     # read file
     dataset = pydicom.dcmread(filePath) 
 
-    # get patient's ID
-    pid = dataset.PatientID
-    # get name
-    name = dataset.PatientName
-    # get sex
-    sex = dataset.PatientSex
-    # get age (ex. 063Y->63)
-    age_list = list(dataset.PatientAge)
-    del age_list[-1]
-    if age_list[0]=='0':
-        del age_list[0]
-    age = ''.join(age_list)
-    # get MP
-    PatientName = str(dataset.PatientName)
-    if "(PM" in PatientName:
-        PatientName = PatientName.split('(')[1].split(')')[0]
-        name_list = list(PatientName)
-        del name_list[0:2]
-        mp = ''.join(name_list)
+    data = patient_data(dataset)
+    pid = data['pid']
+    name = data['name']
+    sex = data['sex']
+    age = data['age']
+    mp = data['mp']
 
     response={
         'pid': pid,
@@ -400,43 +415,30 @@ def show_zip(request):
         match = [s for s in comment if "SCAN type" in s]
         length = len(match)
 
-        # 02 frax: major fracture
+        # no scanType: major fracture
         if length == 0:
             response['scanType'] = 'FRAX'
             keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
             fracture = ''.join(keyword)
             fracture = fracture.split('</')[0].split('>')[1]
             response['fracture'] = fracture
-        # 00 01 03 04
+
+        # at least one scanType:
         else:
-            match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
-            zscore=[]
-            for substring in match_zscore:
-                substring = substring.split('</')[0].split('>')[1]
-                zscore.append(substring)
-            response['zscore'] = zscore
-
-            match_tscore = [s for s in comment if "BMD_TSCORE" in s]
-            tscore=[]
-            for substring in match_tscore:
-                substring = substring.split('</')[0].split('>')[1]
-                tscore.append(substring)
+            comments = t_z_r(comment)
+            tscore = comments['tscore']
+            zscore = comments['zscore']
+            region = comments['region']
             response['tscore'] = tscore
-
-            match_region = [s for s in comment if "ROI region" in s]
-            region=[]
-            for substring in match_region:
-                substring = substring.split('"')[1]
-                region.append(substring)
+            response['zscore'] = zscore
             response['region'] = region
             
-            # 00 01 04
+            # classify through scanType
             if length == 1:
                 scanType = ''.join(match)
                 scanType = scanType.split('"')[1]
                 response['scanType'] = scanType
-
-                # 04
+                # LVA
                 if scanType == 'LVA':
                     keyword = [s for s in comment if "DEFORMITY" in s]
                     lva=[]
@@ -446,13 +448,11 @@ def show_zip(request):
                     while 'None' in lva:
                         lva.remove(substring)
                     response['lva'] = lva
-
-                # 00
+                # AP Spine
                 elif scanType == 'AP Spine':
                     APSpine = list(zip(region, tscore, zscore))
                     response['APSpine'] = APSpine
-
-                # 01
+                # Dual Femur
                 elif scanType == 'DualFemur':
                     DualFemur = list(zip(region, tscore, zscore))
                     response['DualFemur'] = DualFemur
@@ -460,8 +460,8 @@ def show_zip(request):
                 else:
                     print('error input')
 
-            # 03 combination: region tscore zscore
-            elif length == 3:
+            # multi scanType: combination
+            else:
                 del region[1:4]
                 combination = list(zip(region, tscore, zscore))
                 response['combination'] = combination
@@ -532,25 +532,12 @@ def show_dcm(request):
     # read file
     dataset = pydicom.dcmread(filePath)
 
-    # get patient's ID
-    pid = dataset.PatientID
-    # get name
-    name = dataset.PatientName
-    # get sex
-    sex = dataset.PatientSex
-    # get age (ex. 063Y->63)
-    age_list = list(dataset.PatientAge)
-    del age_list[-1]
-    if age_list[0]=='0':
-        del age_list[0]
-    age = ''.join(age_list)
-    # get MP
-    PatientName = str(dataset.PatientName)
-    if "(PM" in PatientName:
-        PatientName = PatientName.split('(')[1].split(')')[0]
-        name_list = list(PatientName)
-        del name_list[0:2]
-        mp = ''.join(name_list)
+    data = patient_data(dataset)
+    pid = data['pid']
+    name = data['name']
+    sex = data['sex']
+    age = data['age']
+    mp = data['mp']
 
     response={
         'filePath': filePath,
@@ -579,42 +566,29 @@ def show_dcm(request):
         match = [s for s in comment if "SCAN type" in s]
         length = len(match)
 
-        # 02 frax: major fracture
+        # no scanType: major fracture
         if length == 0:
             keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
             fracture = ''.join(keyword)
             fracture = fracture.split('</')[0].split('>')[1]
             response['fracture'] = fracture
-        # 00 01 03 04
+
+        # at least one scanType:
         else:
-            match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
-            zscore=[]
-            for substring in match_zscore:
-                substring = substring.split('</')[0].split('>')[1]
-                zscore.append(substring)
-            response['zscore'] = zscore
-
-            match_tscore = [s for s in comment if "BMD_TSCORE" in s]
-            tscore=[]
-            for substring in match_tscore:
-                substring = substring.split('</')[0].split('>')[1]
-                tscore.append(substring)
+            comments = t_z_r(comment)
+            tscore = comments['tscore']
+            zscore = comments['zscore']
+            region = comments['region']
             response['tscore'] = tscore
-
-            match_region = [s for s in comment if "ROI region" in s]
-            region=[]
-            for substring in match_region:
-                substring = substring.split('"')[1]
-                region.append(substring)
+            response['zscore'] = zscore
             response['region'] = region
             
-            # 00 01 04
+            # classify through scanType
             if length == 1:
                 scanType = ''.join(match)
                 scanType = scanType.split('"')[1]
                 response['scanType'] = scanType
-
-                # 04
+                # LVA
                 if scanType == 'LVA':
                     keyword = [s for s in comment if "DEFORMITY" in s]
                     lva=[]
@@ -624,13 +598,11 @@ def show_dcm(request):
                     while 'None' in lva:
                         lva.remove(substring)
                     response['lva'] = lva
-
-                # 00
+                # AP Spine
                 elif scanType == 'AP Spine':
                     APSpine = list(zip(region, tscore, zscore))
                     response['APSpine'] = APSpine
-
-                # 01
+                # Dual Femur
                 elif scanType == 'DualFemur':
                     DualFemur = list(zip(region, tscore, zscore))
                     response['DualFemur'] = DualFemur
@@ -638,8 +610,8 @@ def show_dcm(request):
                 else:
                     print('error input')
 
-            # 03 combination: region tscore zscore
-            elif length == 3:
+            # multi scanType: combination
+            else:
                 del region[1:4]
                 combination = list(zip(region, tscore, zscore))
                 response['combination'] = combination
@@ -731,67 +703,92 @@ def manage_show_zip(request):
     return render(request, 'core/manage_show_zip.html', response)
 
 def check_apspine(request):
+    # need: apspine, lva, frax
     # get the file name user clicked from template
-    myfile = request.session['myfile']
-    fileName = list(myfile)[:-4] # remove '.zip'
-    fileName = ''.join(fileName)
-    apspineFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00000.dcm'
+    myZIPFile = request.session['myfile']
+    print(myZIPFile)
+    zipFolder = list(myZIPFile)[:-4] # remove '.zip'
+    zipFolder = ''.join(zipFolder)
+
+    zipFilePath = 'media/ZIP/' + zipFolder
+    strFilePath = zipFilePath + '/SDY00000/'
+    response={}
+    
+    # recognize files through dataset
+    # get list of the directory
+    onlyFiles = os.listdir(strFilePath)
+    lstFilesDCM = []
+    # get only 'str' files from the list
+    for files in onlyFiles:
+        if "STR" in files:
+            lstFilesDCM.append(files)
+    # browse through each file, search from dataset(scantype), and recognize the information(datatype)
+    for files in lstFilesDCM:
+        filesPath = strFilePath + files
+        print(filesPath)
+        dataset = pydicom.dcmread(filesPath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        match = [s for s in comment if "SCAN type" in s]
+        length = len(match)
+
+        # no scanType: major fracture
+        if length == 0:
+            file_frax = files
+        
+        # at least one scanType:
+        else:           
+            # classify through scanType
+            if length == 1:
+                scanType = ''.join(match)
+                scanType = scanType.split('"')[1]
+                response['scanType'] = scanType
+                # LVA
+                if scanType == 'LVA':
+                    file_lva = files
+                # AP Spine
+                elif scanType == 'AP Spine':
+                    file_apspine = files
+                # Dual Femur
+                elif scanType == 'DualFemur':
+                    file_dualfemur = files
+                else:
+                    print('error input')
+
+            # multi scanType: combination
+            else:
+                file_combination = files
+        print(files)
+
+    apspineFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_apspine
 
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
 
-    response={}
+    data = patient_data(dataset)
+    pid = data['pid']
+    name = data['name']
+    age = data['age']
+    mp = data['mp']
+    sex = data['sex']
+
     comment = dataset.ImageComments
     comment = comment.split('><')
-
-    # get patient's ID
-    pid = dataset.PatientID
-    # get name
-    name = dataset.PatientName
-    # get sex
-    sex = dataset.PatientSex
-    # get age (ex. 063Y->63)
-    age_list = list(dataset.PatientAge)
-    del age_list[-1]
-    if age_list[0]=='0':
-        del age_list[0]
-    age = int(''.join(age_list))
-    # get MP
-    PatientName = str(dataset.PatientName)
-    if "(PM" in PatientName:
-        PatientName = PatientName.split('(')[1].split(')')[0]
-        name_list = list(PatientName)
-        del name_list[0:2]
-        mp = ''.join(name_list)
-
-    response={
+    comments = t_z_r(comment)
+    region = comments['region']
+    tscore = comments['tscore']
+    zscore = comments['zscore']
+    response = {
         'pid': pid,
         'name': name,
         'sex': sex,
         'age': age,
         'mp': mp,
+        'tscore': tscore,
+        'zscore': zscore,
+        'region': region,
     }
-
-    match_tscore = [s for s in comment if "BMD_TSCORE" in s]
-    tscore=[]
-    for substring in match_tscore:
-        substring = substring.split('</')[0].split('>')[1]
-        tscore.append(substring)
-    response['tscore'] = tscore
-
-    match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
-    zscore=[]
-    for substring in match_zscore:
-        substring = substring.split('</')[0].split('>')[1]
-        zscore.append(substring)
-    response['zscore'] = zscore
-
-    match_region = [s for s in comment if "ROI region" in s]
-    region=[]
-    for substring in match_region:
-        substring = substring.split('"')[1]
-        region.append(substring)
-    response['region'] = region
 
     # decide group
     if age<20:
@@ -873,7 +870,7 @@ def check_apspine(request):
     if outcome in machineOutcome:
         response['result'] = 'Correct, go to the next step.'
         # Obtain LVA
-        lvaFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00004.dcm'
+        lvaFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_lva
         # read file
         dataset = pydicom.dcmread(lvaFilePath)
         comment = dataset.ImageComments
@@ -897,9 +894,8 @@ def check_apspine(request):
         grade = [s for s in merge if s[1] != 'None']
         response['grade'] = grade
 
-
         # Obtain frax
-        fraxFilePath = 'media/ZIP/' + fileName + '/SDY00000/STR00002.dcm'
+        fraxFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_frax
         # read file
         dataset = pydicom.dcmread(fraxFilePath)
         comment = dataset.ImageComments
