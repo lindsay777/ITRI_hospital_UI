@@ -20,67 +20,109 @@
     {% csrf_token %}
     <input type="submit" value="download">
   </form>
+  <br>
 
   <li>Patient's Basic Data</li>
-    <blockquote>
-      id: {{ pid }}<br>
-      name: {{ name }}<br>
-      sex: {{ sex }}<br>
-      age: {{ age }}<br>
-      mp: {{ mp }}<br>
-    </blockquote>
-    <br>
+  <blockquote>
+    <table border="1">
+      <tr>
+        <td style="width:100px">Patient ID</td>
+        <td style="width:400px">{{ pid }}</td>
+      </tr>
+      <tr>
+        <td>Patient Name</td>
+        <td>{{ name }}</td>
+      </tr>
+      <tr>
+        <td>Sex</td>
+        <td>{{ sex }}</td>
+      </tr>
+      <tr>
+        <td>Age</td>
+        <td>{{ age }}</td>
+      </tr>
+      <tr>
+        <td>MP age</td>
+        <td>{{ mp }}</td>
+      </tr>
+    </table>
+  </blockquote>
+  <br>
 
-    <li>Data grab from ITRI system:</li>
-    <blockquote>
-      {% if region %}
-        <p>region: {{ region }}</p>
-      {% endif %}
-
-      {% if tscore %}
-        <p>T-score: {{ tscore }}</p>
-      {% endif %}
-
-      {% if zscore %}
-        <p>Z-score: {{ zscore }}</p>
-      {% endif %}
-
+  <li>Data grab from ITRI system:</li>
+  <blockquote>
+    <table border="1">
       {% if scanType %}
-        <p>scan type: {{ scanType }}</p>
+        <tr>
+          <td style="width:100px">scan type</td>
+          <td style="width:400px">{{ scanType }}</td>
+        </tr>
       {% endif %}
-
+      {% if region %}
+        <tr>
+          <td>region</td>
+          <td>{{ region }}</td>
+        </tr>
+      {% endif %}
+      {% if tscore %}
+        <tr>
+          <td>T-score</td>
+          <td>{{ tscore }}</td>
+        </tr>
+      {% endif %}
+      {% if zscore %}
+        <tr>
+          <td>Z-score</td>
+          <td>{{ zscore }}</td>
+        </tr>
+      {% endif %}
       {% if APSpine %}
-        <p>APSpine: {{ APSpine }}</p>
+        <tr>
+          <td>AP Spine</td>
+          <td>{{ APSpine }}</td>
+        </tr>
       {% endif %}
-
       {% if DualFemur %}
-        <p>DualFemur: {{ DualFemur }}</p>
+        <tr>
+          <td>Dual Femur</td>
+          <td>{{ DualFemur }}</td>
+        </tr>
       {% endif %}
-
       {% if fracture %}
-        <p>fracture: {{ fracture }}</p>
+        <tr>
+          <td>Major Osteoporotic Fracture</td>
+          <td>{{ fracture }}</td>
+        </tr>
       {% endif %}
-
-      {% if combination and T7%}
-        <p>combination: {{ combination }}</p>
-        T7: {{ T7 }}
+      {% if combination and T7 %}
+        <tr>
+          <td>combination</td>
+          <td>{{ combination }}</td>
+        </tr>
+        <tr>
+            <td>T7</td>
+            <td>{{ T7 }}</td>
+          </tr>
       {% endif %}
-
       {% if lva %}
-        <p>LVA: {{ lva }}</p>
+        <tr>
+          <td>LVA</td>
+          <td>{{ lva }}</td>
+        </tr>
       {% endif %}
-    </blockquote>
-    
-    <blockquote>
-    {% if report %}
-      report: {{ report }}<br>
-      <img src="{{ report }}" alt="My image">
-    {% endif %}
-    </blockquote>
+    </table>
+  </blockquote>
+  
+  <blockquote>
+  {% if report %}
+    report: {{ report }}<br>
+    <img src="{{ report }}" alt="My image">
+  {% endif %}
+  </blockquote>
 
-    <br>
-    <li>dataset:</li>
-    <pre>{{ dataset }}</pre>
+  <br>
+  <li>dataset:</li>
+  <pre>{{ dataset }}</pre>
 
   <p><a href="{% url 'manage_dcm' %}">Return to Manage DCM</a></p>
   <p><a href="{% url 'home' %}">Return to home</a></p>

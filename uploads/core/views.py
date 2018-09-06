@@ -38,92 +38,6 @@ def home(request):
     documents = Document.objects.all()
     return render(request, 'core/home.html', { 'documents': documents })
 
-def simple_upload(request):
-    if request.method == 'POST' and request.FILES['myfile']:
-        myfile = request.FILES['myfile']
-        fs = FileSystemStorage()
-        zipFileName = fs.save(myfile.name, myfile)
-
-        # read zip file
-        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', zipFileName))
-
-        # create a folder with a uniqe name same as the zip file
-        folderNameList = list(zipFileName)[:-4] #remove '.zip'
-        folderName = ''.join(folderNameList)
-        folderPath = 'media/' + folderName
-
-        # extract zip file to the folder created
-        for file in zip_file.namelist():
-            zip_file.extract(file, os.path.join(os.getcwd(), folderPath))
-
-        # get .dcm files from the zip folder
-        zip_list = zip_file.namelist()
-        lstFilesDCM = []
-        for file_name in zip_list:
-            if ".dcm" in file_name.lower():
-                lstFilesDCM.append(os.path.join(os.getcwd(), folderPath, file_name))
-
-        # read IMG00000
-        dataset = pydicom.dcmread(lstFilesDCM[0]) 
-
-        # get patient's ID
-        pid = dataset.PatientID
-        # get sex
-        sex = dataset.PatientSex
-        # get age (ex. 063Y->63)
-        age_list = list(dataset.PatientAge)
-        del age_list[-1]
-        if age_list[0]=='0':
-            del age_list[0]
-        age = ''.join(age_list)
-        # get MP
-        name = str(dataset.PatientName)
-        if "(PM" in name:
-            name = name.split('(')[1].split(')')[0]
-            name_list = list(name)
-            del name_list[0:2]
-            mp = ''.join(name_list)
-
-        #----- get image report from file IMG00000 -----  
-        # get image and save to report
-        # pydicom example: https://goo.gl/SMyny4
-        report = ''
-        if cv2.imwrite(folderPath + '/IMG00000_report.jpg', dataset.pixel_array):
-            report = '/' + folderPath + '/IMG00000_report.jpg'
-
-        #----- get zscore, tscore from file STR00000 -----
-        # read STR00000
-        dataset = pydicom.dcmread(lstFilesDCM[5])  
-
-        zscore=[]
-        tscore=[]
-        imageComments = dataset.ImageComments.split('><')
-
-        # get zscore
-        match_zscore = [s for s in imageComments if "BMD_ZSCORE" in s]
-        for substring in match_zscore:
-            substring = substring.split('</')[0].split('>')[1]
-            zscore.append(substring)
-        # get tscore
-        match_tscore = [s for s in imageComments if "BMD_TSCORE" in s]
-        for substring in match_tscore:
-            substring = substring.split('</')[0].split('>')[1]
-            tscore.append(substring)
-
-        uploaded_file_url = fs.url(zipFileName)
-        return render(request, 'core/simple_upload.html', {
-            'uploaded_file_url': uploaded_file_url,
-            'pid': pid,
-            'sex': sex,
-            'age': age,
-            'mp': mp,
-            'zscore': zscore,
-            'tscore': tscore,
-            'report': report,
-        })
-
-    return render(request, 'core/simple_upload.html')
-
 def patient_data(dataset):
     data={}
     # get patient's ID
@@ -466,25 +380,13 @@ def show_zip(request):
                 combination = list(zip(region, tscore, zscore))
                 response['combination'] = combination
                 # get LVA
+                # TODO: file 494 STR03 problem??
                 T7 = [s for s in comment if "DEFORMITY" in s]
                 T7 = ''.join(T7)
                 T7 = T7.split('</')[0].split('>')[1]
                 response['T7'] = T7   
 
     return render(request, 'core/show_zip.html', response)
-
-def model_form_upload(request):
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        # check if the input is valid
-        if form.is_valid(): 
-            form.save()
-            return redirect('home')
-    else:
-        form = DocumentForm()
-    return render(request, 'core/model_form_upload.html', {
-        'form': form
-    })
 
 def manage_dcm(request):
 
@@ -832,6 +734,7 @@ def check_apspine(request):
         mean = (float(merge[1][1]) + float(merge[2][1]))/2
         dist1 = abs(float(merge[0][1]) - mean)
         dist2 = abs(mean - float(merge[3][1]))
+        response['mean'] = mean
         response['dist1'] = dist1
         response['dist2'] = dist2
     elif group:
@@ -840,6 +743,7 @@ def check_apspine(request):
         mean = (float(merge[1][2]) + float(merge[2][2]))/2
         dist1 = abs(float(merge[0][2]) - mean)
         dist2 = abs(mean - float(merge[3][2]))
+        response['mean'] = mean
         response['dist1'] = dist1
         response['dist2'] = dist2
 
@@ -918,6 +822,225 @@ def check_apspine(request):
         response['result'] = 'Warn!! Please Re-gen.'
 
     return render(request, 'core/check_apspine.html', response)
+
+def report(request):
+    # need: apspine, lva, frax
+    # get the file name user clicked from template
+    myZIPFile = request.session['myfile']
+    print(myZIPFile)
+    zipFolder = list(myZIPFile)[:-4] # remove '.zip'
+    zipFolder = ''.join(zipFolder)
+
+    zipFilePath = 'media/ZIP/' + zipFolder
+    strFilePath = zipFilePath + '/SDY00000/'
+    response={}
+    
+    # recognize files through dataset
+    # get list of the directory
+    onlyFiles = os.listdir(strFilePath)
+    lstFilesDCM = []
+    # get only 'str' files from the list
+    for files in onlyFiles:
+        if "STR" in files:
+            lstFilesDCM.append(files)
+    # browse through each file, search from dataset(scantype), and recognize the information(datatype)
+    for files in lstFilesDCM:
+        filesPath = strFilePath + files
+        print(filesPath)
+        dataset = pydicom.dcmread(filesPath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        match = [s for s in comment if "SCAN type" in s]
+        length = len(match)
+
+        # no scanType: major fracture
+        if length == 0:
+            file_frax = files
+        
+        # at least one scanType:
+        else:           
+            # classify through scanType
+            if length == 1:
+                scanType = ''.join(match)
+                scanType = scanType.split('"')[1]
+                response['scanType'] = scanType
+                # LVA
+                if scanType == 'LVA':
+                    file_lva = files
+                # AP Spine
+                elif scanType == 'AP Spine':
+                    file_apspine = files
+                # Dual Femur
+                elif scanType == 'DualFemur':
+                    file_dualfemur = files
+                else:
+                    print('error input')
+
+            # multi scanType: combination
+            else:
+                file_combination = files
+        print(files)
+
+    apspineFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_apspine
+
+    # read file
+    dataset = pydicom.dcmread(apspineFilePath)
+
+    data = patient_data(dataset)
+    pid = data['pid']
+    name = data['name']
+    age = data['age']
+    mp = data['mp']
+    sex = data['sex']
+
+    comment = dataset.ImageComments
+    comment = comment.split('><')
+    comments = t_z_r(comment)
+    region = comments['region']
+    tscore = comments['tscore']
+    zscore = comments['zscore']
+    response = {
+        'pid': pid,
+        'name': name,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+        'tscore': tscore,
+        'zscore': zscore,
+        'region': region,
+    }
+
+    # decide group
+    if age<20:
+        group = 'Z'
+    elif 20<=age<50:
+        if mp == '':
+            group = 'Z'
+        else:
+            if sex == 'F':
+                group = 'T'
+            else:
+                group = 'Z'
+    else:
+        if mp == '':
+            if sex == 'F':
+                group = 'Z'
+            else:
+                group = 'T'
+        else:
+            group = 'T'
+    response['group'] = group
+
+    # zip
+    merge = list(zip(region, tscore, zscore))
+    # get the outcome from the machine
+    machineMerge = merge[4:]
+    machineOutcome = []
+    for substring in machineMerge:
+        machineOutcome.append(substring[0])
+    response['machineOutcome'] = machineOutcome
+    merge = merge[:4]
+
+    # sort(according to tscore or zscore)
+    def getT(item):
+        return float(item[1])
+    def getZ(item):
+        return float(item[2])
+    if group == 'T':
+        merge = sorted(merge, key=getT)
+        # get mean and absolute value
+        mean = (float(merge[1][1]) + float(merge[2][1]))/2
+        dist1 = abs(float(merge[0][1]) - mean)
+        dist2 = abs(mean - float(merge[3][1]))
+        response['mean'] = mean
+        response['dist1'] = dist1
+        response['dist2'] = dist2
+    elif group:
+        merge = sorted(merge, key=getZ)
+        # get mean and absolute value
+        mean = (float(merge[1][2]) + float(merge[2][2]))/2
+        dist1 = abs(float(merge[0][2]) - mean)
+        dist2 = abs(mean - float(merge[3][2]))
+        response['mean'] = mean
+        response['dist1'] = dist1
+        response['dist2'] = dist2
+
+    # regionFilter: remove outlier
+    regionFilter = ['L1','L2','L3','L4']
+    if dist1 > 1:
+        regionFilter.remove(merge[0][0])
+    if dist2 > 1:
+        regionFilter.remove(merge[3][0])
+    response['regionFilter'] = regionFilter
+
+    # deal with value in '()'
+    start = regionFilter[0]
+    end = regionFilter[-1]
+    region = ['L1','L2','L3','L4']
+    index1 = region.index(start)
+    index2 = region.index(end)
+    region = region[index1:index2+1]
+    diffRegion = ','.join([item for item in region if item not in regionFilter])
+
+    if diffRegion == '':
+        outcome = str(start + '-' + end)
+    else:
+        outcome = str(start + '-' + end + '(' + diffRegion + ')')
+    response['outcome'] = outcome
+    
+    # check the result to determine re-gen or not
+    if outcome in machineOutcome:
+        response['result'] = 'Correct, go to the next step.'
+        # Obtain LVA
+        lvaFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_lva
+        # read file
+        dataset = pydicom.dcmread(lvaFilePath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        # get region
+        region4 = [s for s in comment if "ROI region" in s]
+        region=[]
+        for substring in region4:
+            substring = substring.split('"')[1]
+            region.append(substring)
+        # get deformity    
+        keyword4 = [s for s in comment if "DEFORMITY" in s]
+        lva=[]
+        for substring in keyword4:
+            substring = substring.split('</')[0].split('>')[1]
+            lva.append(substring)
+        # zip two feature
+        merge = list(zip(region, lva))
+        # get outcome
+        grade = [s for s in merge if s[1] != 'None']
+        response['grade'] = grade
+
+        # Obtain frax
+        fraxFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_frax
+        # read file
+        dataset = pydicom.dcmread(fraxFilePath)
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        # get major frac
+        majorFrac = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
+        majorFrac = ''.join(majorFrac)
+        majorFrac = majorFrac.split('</')[0].split('>')[1]
+        response['majorFrac'] = majorFrac
+        #get hip frac
+        hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
+        hipFrac = ''.join(hipFrac)
+        hipFrac = hipFrac.split('</')[0].split('>')[1]
+        response['hipFrac'] = hipFrac
+
+        return render(request, 'core/report.html', response)
+
+    else:
+        response['result'] = 'Warn!! Please Re-gen.'
+
+    return render(request, 'core/report.html', response)
 
 def rename(request):
     # get file name from show_DCM/manage_show_zip

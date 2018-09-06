@@ -86,10 +86,6 @@
 
   <li>Result: {{ result }}</li>
   <blockquote>
-    <form action="/uploads/report/" method="post">
-      {% csrf_token %}
-      <input type="submit" value="download report">
-    </form>
     <table border="1">
       {% if grade %}
         <tr>
