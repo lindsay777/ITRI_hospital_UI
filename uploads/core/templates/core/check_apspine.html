@@ -61,11 +61,10 @@
         <td>{{ mean }}</td>
       </tr>
       <tr>
-        <td>Average Deviation1</td>
+        <td rowspan="2">Aver. Deviation</td>
         <td>{{ dist1 }}</td>
       </tr>
       <tr>
-        <td>Average Deviation2</td>
         <td>{{ dist2 }}</td>
       </tr>
       <tr>
@@ -93,12 +92,13 @@
     <table border="1">
       {% if grade %}
         <tr>
-          <td style="width:220px">LVA Grade</td>
+          <td colspan="2" style="width:220px">LVA Grade</td>
           <td style="width:500px">{{ grade }}</td>
         </tr>
       {% endif %}
       {% if majorFrac and hipFrac%}
         <tr>
+          <td rowspan="2">Frax</td>
           <td>Major Osteoporotic Fracture</td>
           <td>{{ majorFrac }}</td>
         </tr>

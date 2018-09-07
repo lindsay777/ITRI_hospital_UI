@@ -19,6 +19,10 @@ import shutil
 import re
 from pydicom.data import get_testdata_files
 
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+
 # variable naming principle:
 # myfile: .dcm
 # myZipFile: .zip
@@ -43,7 +47,7 @@ def patient_data(dataset):
     # get patient's ID
     pid = dataset.PatientID
     # get name
-    name = dataset.PatientName
+    name = str(dataset.PatientName)
     # get sex
     sex = dataset.PatientSex
     # get age (ex. 063Y->63)
@@ -355,13 +359,16 @@ def show_zip(request):
                 # LVA
                 if scanType == 'LVA':
                     keyword = [s for s in comment if "DEFORMITY" in s]
+                    print(keyword)
                     lva=[]
                     for substring in keyword:
                         substring = substring.split('</')[0].split('>')[1]
                         lva.append(substring)
-                    while 'None' in lva:
-                        lva.remove(substring)
+                        print(substring)
+                        while 'None' in lva:
+                            lva.remove(substring)
                     response['lva'] = lva
+                    print(lva)
                 # AP Spine
                 elif scanType == 'AP Spine':
                     APSpine = list(zip(region, tscore, zscore))
@@ -816,231 +823,59 @@ def check_apspine(request):
         hipFrac = hipFrac.split('</')[0].split('>')[1]
         response['hipFrac'] = hipFrac
 
+        print(response)
+        request.session['reportVar'] = response
         return render(request, 'core/check_apspine.html', response)
 
     else:
+        request.session['reportVar'] = response
         response['result'] = 'Warn!! Please Re-gen.'
 
     return render(request, 'core/check_apspine.html', response)
 
+# def report(request):
+#     reportVar = request.session['reportVar']
+#     print(reportVar)
+#     return render(request, 'core/report.html', reportVar)
+
+# def write_pdf_view(request):
+#     doc = SimpleDocTemplate("/tmp/somefilename.pdf")
+#     styles = getSampleStyleSheet()
+#     Story = [Spacer(1,2*inch)]
+#     style = styles["Normal"]
+#     for i in range(100):
+#        bogustext = ("This is Paragraph number %s.  " % i) * 20
+#        p = Paragraph(bogustext, style)
+#        Story.append(p)
+#        Story.append(Spacer(1,0.2*inch))
+#     doc.build(Story)
+
+#     fs = FileSystemStorage("/tmp")
+#     with fs.open("somefilename.pdf") as pdf:
+#         response = HttpResponse(pdf, content_type='application/pdf')
+#         response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
+#         return response
+
+#     return response
+
 def report(request):
-    # need: apspine, lva, frax
-    # get the file name user clicked from template
-    myZIPFile = request.session['myfile']
-    print(myZIPFile)
-    zipFolder = list(myZIPFile)[:-4] # remove '.zip'
-    zipFolder = ''.join(zipFolder)
+    reportVar = request.session['reportVar']
+    reportText = "Average bone mineral density(BMD) of L1 to L4 is " + reportVar['group'] + "gm/cm2, "
+    # Create the HttpResponse object with the appropriate PDF headers.
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
 
-    zipFilePath = 'media/ZIP/' + zipFolder
-    strFilePath = zipFilePath + '/SDY00000/'
-    response={}
-    
-    # recognize files through dataset
-    # get list of the directory
-    onlyFiles = os.listdir(strFilePath)
-    lstFilesDCM = []
-    # get only 'str' files from the list
-    for files in onlyFiles:
-        if "STR" in files:
-            lstFilesDCM.append(files)
-    # browse through each file, search from dataset(scantype), and recognize the information(datatype)
-    for files in lstFilesDCM:
-        filesPath = strFilePath + files
-        print(filesPath)
-        dataset = pydicom.dcmread(filesPath)
-        comment = dataset.ImageComments
-        comment = comment.split('><')
+    # Create the PDF object, using the response object as its "file."
+    p = canvas.Canvas(response)
 
-        match = [s for s in comment if "SCAN type" in s]
-        length = len(match)
+    # Draw things on the PDF. Here's where the PDF generation happens.
+    # See the ReportLab documentation for the full list of functionality.
+    p.drawString(90, 750, reportText)
 
-        # no scanType: major fracture
-        if length == 0:
-            file_frax = files
-        
-        # at least one scanType:
-        else:           
-            # classify through scanType
-            if length == 1:
-                scanType = ''.join(match)
-                scanType = scanType.split('"')[1]
-                response['scanType'] = scanType
-                # LVA
-                if scanType == 'LVA':
-                    file_lva = files
-                # AP Spine
-                elif scanType == 'AP Spine':
-                    file_apspine = files
-                # Dual Femur
-                elif scanType == 'DualFemur':
-                    file_dualfemur = files
-                else:
-                    print('error input')
-
-            # multi scanType: combination
-            else:
-                file_combination = files
-        print(files)
-
-    apspineFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_apspine
-
-    # read file
-    dataset = pydicom.dcmread(apspineFilePath)
-
-    data = patient_data(dataset)
-    pid = data['pid']
-    name = data['name']
-    age = data['age']
-    mp = data['mp']
-    sex = data['sex']
-
-    comment = dataset.ImageComments
-    comment = comment.split('><')
-    comments = t_z_r(comment)
-    region = comments['region']
-    tscore = comments['tscore']
-    zscore = comments['zscore']
-    response = {
-        'pid': pid,
-        'name': name,
-        'sex': sex,
-        'age': age,
-        'mp': mp,
-        'tscore': tscore,
-        'zscore': zscore,
-        'region': region,
-    }
-
-    # decide group
-    if age<20:
-        group = 'Z'
-    elif 20<=age<50:
-        if mp == '':
-            group = 'Z'
-        else:
-            if sex == 'F':
-                group = 'T'
-            else:
-                group = 'Z'
-    else:
-        if mp == '':
-            if sex == 'F':
-                group = 'Z'
-            else:
-                group = 'T'
-        else:
-            group = 'T'
-    response['group'] = group
-
-    # zip
-    merge = list(zip(region, tscore, zscore))
-    # get the outcome from the machine
-    machineMerge = merge[4:]
-    machineOutcome = []
-    for substring in machineMerge:
-        machineOutcome.append(substring[0])
-    response['machineOutcome'] = machineOutcome
-    merge = merge[:4]
-
-    # sort(according to tscore or zscore)
-    def getT(item):
-        return float(item[1])
-    def getZ(item):
-        return float(item[2])
-    if group == 'T':
-        merge = sorted(merge, key=getT)
-        # get mean and absolute value
-        mean = (float(merge[1][1]) + float(merge[2][1]))/2
-        dist1 = abs(float(merge[0][1]) - mean)
-        dist2 = abs(mean - float(merge[3][1]))
-        response['mean'] = mean
-        response['dist1'] = dist1
-        response['dist2'] = dist2
-    elif group:
-        merge = sorted(merge, key=getZ)
-        # get mean and absolute value
-        mean = (float(merge[1][2]) + float(merge[2][2]))/2
-        dist1 = abs(float(merge[0][2]) - mean)
-        dist2 = abs(mean - float(merge[3][2]))
-        response['mean'] = mean
-        response['dist1'] = dist1
-        response['dist2'] = dist2
-
-    # regionFilter: remove outlier
-    regionFilter = ['L1','L2','L3','L4']
-    if dist1 > 1:
-        regionFilter.remove(merge[0][0])
-    if dist2 > 1:
-        regionFilter.remove(merge[3][0])
-    response['regionFilter'] = regionFilter
-
-    # deal with value in '()'
-    start = regionFilter[0]
-    end = regionFilter[-1]
-    region = ['L1','L2','L3','L4']
-    index1 = region.index(start)
-    index2 = region.index(end)
-    region = region[index1:index2+1]
-    diffRegion = ','.join([item for item in region if item not in regionFilter])
-
-    if diffRegion == '':
-        outcome = str(start + '-' + end)
-    else:
-        outcome = str(start + '-' + end + '(' + diffRegion + ')')
-    response['outcome'] = outcome
-    
-    # check the result to determine re-gen or not
-    if outcome in machineOutcome:
-        response['result'] = 'Correct, go to the next step.'
-        # Obtain LVA
-        lvaFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_lva
-        # read file
-        dataset = pydicom.dcmread(lvaFilePath)
-        comment = dataset.ImageComments
-        comment = comment.split('><')
-
-        # get region
-        region4 = [s for s in comment if "ROI region" in s]
-        region=[]
-        for substring in region4:
-            substring = substring.split('"')[1]
-            region.append(substring)
-        # get deformity    
-        keyword4 = [s for s in comment if "DEFORMITY" in s]
-        lva=[]
-        for substring in keyword4:
-            substring = substring.split('</')[0].split('>')[1]
-            lva.append(substring)
-        # zip two feature
-        merge = list(zip(region, lva))
-        # get outcome
-        grade = [s for s in merge if s[1] != 'None']
-        response['grade'] = grade
-
-        # Obtain frax
-        fraxFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_frax
-        # read file
-        dataset = pydicom.dcmread(fraxFilePath)
-        comment = dataset.ImageComments
-        comment = comment.split('><')
-
-        # get major frac
-        majorFrac = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
-        majorFrac = ''.join(majorFrac)
-        majorFrac = majorFrac.split('</')[0].split('>')[1]
-        response['majorFrac'] = majorFrac
-        #get hip frac
-        hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
-        hipFrac = ''.join(hipFrac)
-        hipFrac = hipFrac.split('</')[0].split('>')[1]
-        response['hipFrac'] = hipFrac
-
-        return render(request, 'core/report.html', response)
-
-    else:
-        response['result'] = 'Warn!! Please Re-gen.'
-
-    return render(request, 'core/report.html', response)
+    # Close the PDF object cleanly, and we're done.
+    p.showPage()
+    p.save()
+    return response
 
 def rename(request):
     # get file name from show_DCM/manage_show_zip

@@ -3,108 +3,18 @@
 {% load static %}
 
 {% block content %}
-  <li>Patient's Basic Data</li>
-  <blockquote>
-    <table border="1">
-      <tr>
-        <td style="width:220px">Patient ID</td>
-        <td style="width:500px">{{ pid }}</td>
-      </tr>
-      <tr>
-        <td>Patient Name</td>
-        <td>{{ name }}</td>
-      </tr>
-      <tr>
-        <td>Sex</td>
-        <td>{{ sex }}</td>
-      </tr>
-      <tr>
-        <td>Age</td>
-        <td>{{ age }}</td>
-      </tr>
-      <tr>
-        <td>MP age</td>
-        <td>{{ mp }}</td>
-      </tr>
-    </table>
-  </blockquote>
-  <br>
 
-  <li>Data grab from ITRI system:</li>
-  <blockquote>
-    <table border="1">
-      <tr>
-        <td style="width:220px">Region</td>
-        <td style="width:500px">{{ region }}</td>
-      </tr>
-      <tr>
-        <td>T-score</td>
-        <td>{{ tscore }}</td>
-      </tr>
-      <tr>
-        <td>Z-score</td>
-        <td>{{ zscore }}</td>
-      </tr>
-    </table>
-  </blockquote>
-  <br>
+Average bone mineral density(BMD) of L1 to L4 is {{ group }} gm/cm2, about {{ group }} of the mean of young reference value(T-score = {{ group }}).<br><br>
 
-  <li>Analyze through ITRI system:</li>
-  <blockquote>
-    <table border="1">
-      <tr>
-        <td style="width:220px">Group-by</td>
-        <td style="width:500px">{{ group }}-score</td>
-      </tr>
-      <tr>
-        <td>Mean</td>
-        <td>{{ mean }}</td>
-      </tr>
-      <tr>
-        <td>Average Deviation1</td>
-        <td>{{ dist1 }}</td>
-      </tr>
-      <tr>
-        <td>Average Deviation2</td>
-        <td>{{ dist2 }}</td>
-      </tr>
-      <tr>
-        <td>Region Filter</td>
-        <td>{{ regionFilter }}</td>
-      </tr>
-      <tr>
-        <td>SR</td>
-        <td>{{ machineOutcome }}</td>
-      </tr>
-      <tr>
-        <td>SRi</td>
-        <td>{{ outcome }}</td>
-      </tr>
-    </table>
-  </blockquote>
-  <br>
+The BMD of right proximal femur is {{ group }} gm/cm2, and is about {{ group }} of the mean of young reference value(T-score = {{ group }}).<br><br>
 
-  <li>Result: {{ result }}</li>
-  <blockquote>
-    <table border="1">
-      {% if grade %}
-        <tr>
-          <td style="width:220px">LVA Grade</td>
-          <td style="width:500px">{{ grade }}</td>
-        </tr>
-      {% endif %}
-      {% if majorFrac and hipFrac%}
-        <tr>
-          <td>Major Osteoporotic Fracture</td>
-          <td>{{ majorFrac }}</td>
-        </tr>
-        <tr>
-          <td>Hip Fracture</td>
-          <td>{{ hipFrac }}</td>
-        </tr>
-      {% endif %}
-    </table>
-  </blockquote>
+The BMD of right 1/3 forearm is {{ group }} gm/cm2, about {{ group }} of the mean of young reference value(T-score = {{ group }}).<br><br>
+
+Conclusion:<br><br>
+
+The BMD meetis the criteria of {{ group }}, according to the WHO(World Health Organization) classification.
+
+
 
   <p><a href="{% url 'manage_zip' %}">manage uploaded ZIP files</a></p>
   <p><a href="{% url 'home' %}">Return to home</a></p>
