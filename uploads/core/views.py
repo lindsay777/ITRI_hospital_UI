@@ -5,7 +5,7 @@ from django.http import HttpResponse
 
 from uploads.core.models import Document
 from uploads.core.forms import DocumentForm
-from uploads.core.forms import nameForm
+#from uploads.core.forms import nameForm
 
 from os import listdir
 from os.path import isfile, join
@@ -19,9 +19,9 @@ import shutil
 import re
 from pydicom.data import get_testdata_files
 
-import io
-from django.http import FileResponse
-from reportlab.pdfgen import canvas
+# import io
+# from django.http import FileResponse
+# from reportlab.pdfgen import canvas
 
 # variable naming principle:
 # myfile: .dcm
@@ -97,6 +97,19 @@ def t_z_r(comment):
         region.append(substring)
     comments['region'] = region
     return comments
+
+def model_form_upload(request):
+    documents = Document.objects.all()
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+    else:
+        form = DocumentForm()
+    return render(request, 'core/model_form_upload.html', {
+        'form': form,
+        'documents': documents,
+    })
 
 def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
@@ -220,6 +233,14 @@ def upload_dcm(request):
         
 def upload_zip(request):
     if request.method == 'POST' and request.FILES['myfile']:
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid(): #TODO: 
+            print('hi')
+            form.save()
+        else:
+            print('XXXXX')
+            form = DocumentForm()
+
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         myZipFile = fs.save(myfile.name, myfile)
@@ -278,9 +299,76 @@ def upload_zip(request):
 
             response['uploaded_file_url'] = fs.url(myZipFile)
             
-            return render(request, 'core/upload_zip.html', response)
+            return render(request, 'core/upload_zip.html', {
+                'form': form,
+                'response': response
+            })
     else: 
         return render(request, 'core/upload_zip.html')
+
+def upload_multi_zip(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        myZipFile = fs.save(myfile.name, myfile)
+        request.session['myZipFile']=myZipFile
+
+        # get folder name of the extracted zip file
+        zipFolder = list(myZipFile)[:-4] #remove '.zip'
+        zipFolder = ''.join(zipFolder)
+        zipFilePath = 'media/ZIP/' + zipFolder
+        
+        # get file list in the folder
+        onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
+        # if the file name already exists, show warning
+        if myZipFile in onlyfiles:
+            os.remove('media/'+myZipFile)
+            response = {
+                'warning':myZipFile
+            }
+            return render(request, 'core/upload_multi_zip.html', response)
+        
+        else: 
+            # move file form media/ to media/zip/ folder
+            shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+            # read zip file
+            zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
+            # extract zip file
+            for file in zip_file.namelist():
+                zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
+
+            response={
+                'myZipFile': myZipFile,
+                'zipFilePath': zipFilePath,
+            }
+
+            # directory tree
+            dir_tree = []
+            # contain '.dcm' files 
+            file_tree = []
+            # traverse root directory, and list directories as dirs and files as files
+            for root, dirs, files in os.walk(zipFilePath):
+                path = root.split(os.sep)
+                line = ((len(path) - 1) * '---', os.path.basename(root))
+                line = ''.join(line)
+                dir_tree.append(line)
+                file_tree.append('')
+                for file in files:
+                    line = (len(path) * '---', file)
+                    line = ''.join(line)
+                    dir_tree.append(line)
+                    file_tree.append(file)
+            response['dir_tree'] = dir_tree
+            response['file_tree'] = file_tree
+            # zip so that templates can show
+            file_dir_list = zip(dir_tree, file_tree)
+            response['file_dir_list'] = file_dir_list
+
+            response['uploaded_file_url'] = fs.url(myZipFile)
+            
+            return render(request, 'core/upload_multi_zip.html', response)
+    else: 
+        return render(request, 'core/upload_multi_zip.html')
 
 def show_zip(request):
     zipFolder = request.session['myZipFile']
@@ -670,6 +758,8 @@ def check_apspine(request):
                 file_combination = files
         print(files)
 
+    #TODO: show which file is not exist
+    
     apspineFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_apspine
 
     # read file
@@ -832,31 +922,6 @@ def check_apspine(request):
         response['result'] = 'Warn!! Please Re-gen.'
 
     return render(request, 'core/check_apspine.html', response)
-
-# def report(request):
-#     reportVar = request.session['reportVar']
-#     print(reportVar)
-#     return render(request, 'core/report.html', reportVar)
-
-# def write_pdf_view(request):
-#     doc = SimpleDocTemplate("/tmp/somefilename.pdf")
-#     styles = getSampleStyleSheet()
-#     Story = [Spacer(1,2*inch)]
-#     style = styles["Normal"]
-#     for i in range(100):
-#        bogustext = ("This is Paragraph number %s.  " % i) * 20
-#        p = Paragraph(bogustext, style)
-#        Story.append(p)
-#        Story.append(Spacer(1,0.2*inch))
-#     doc.build(Story)
-
-#     fs = FileSystemStorage("/tmp")
-#     with fs.open("somefilename.pdf") as pdf:
-#         response = HttpResponse(pdf, content_type='application/pdf')
-#         response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
-#         return response
-
-#     return response
 
 def report(request):
     reportVar = request.session['reportVar']
