@@ -19,9 +19,9 @@ import shutil
 import re
 from pydicom.data import get_testdata_files
 
-# import io
-# from django.http import FileResponse
-# from reportlab.pdfgen import canvas
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
 
 # variable naming principle:
 # myfile: .dcm

@@ -10,3 +10,19 @@ class DocumentForm(forms.ModelForm):
 
 class nameForm(forms.Form):
     rename=forms.CharField()
+
+class File(forms.Form):
+    pid = forms.CharField(max_length=20)
+    name = forms.CharField(max_length=20)
+    sex = forms.CharField()
+    age = forms.IntegerField()
+    mp = forms.IntegerField()
+    scanType = forms.CharField(max_length=10)
+    fracture = forms.IntegerField()
+    tscore = forms.CharField()
+    zscore = forms.CharField()
+    region = forms.CharField()
+    lva = forms.CharField()
+    apspine = forms.CharField()
+    dualfemur = forms.CharField()
+    combination = forms.CharField()
