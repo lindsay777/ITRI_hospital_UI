@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from .models import File
 
 from uploads.core.models import Document
 from uploads.core.forms import DocumentForm
-#from uploads.core.forms import nameForm
 
 from os import listdir
 from os.path import isfile, join
@@ -133,6 +133,10 @@ def upload_dcm(request):
             # move file form media/ to media/dcm/ folder
             shutil.move('media/'+myfile, 'media/DCM/'+myfile)
             dcmFilePath = 'media/DCM/' + myfile
+
+            # db test
+            fileInstance = File(filename=fileName)
+            fileInstance.save()
 
             # read file
             dataset = pydicom.dcmread(dcmFilePath) 
@@ -1034,3 +1038,24 @@ def download(request):
                 return render(request, 'core/show_dcm.html')
             elif fileType.startswith('zip'):
                 return render(request, 'core/manage_show_zip.html')
+
+def handle_uploaded_file(f):
+    with open('some/file/name.txt', 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+
+def upload_to_db(request):
+    lastfile= File.objects.last()
+    filepath= lastfile.filepath
+    filename= lastfile.name
+
+    form= FileForm(request.POST or None, request.FILES or None)
+    if form.is_valid():
+        form.save()
+   
+    context= {'filepath': filepath,
+              'form': form,
+              'filename': filename
+              }  
+      
+    return render(request, 'Blog/files.html', context)

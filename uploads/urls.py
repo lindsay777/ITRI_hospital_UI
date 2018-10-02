@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^uploads/manageShowZIP/$', views.manage_show_zip, name='manage_show_zip'),
     url(r'^uploads/checkAPSpine/$', views.check_apspine, name='check_apspine'),
     url(r'^uploads/report/$', views.report, name='report'),
+    url(r'^uploads/uploadDB/$', views.upload_to_db, name='upload_to_db'),
     url(r'^admin/', admin.site.urls),
 ]
 
