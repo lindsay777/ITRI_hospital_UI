@@ -12,14 +12,23 @@ def get_upload_file_name(instance, filename):
     return "core/%s" %filename
 
 class File(models.Model):
-    #filepath = models.FileField(upload_to='files/', null=True, verbose_name="")
-    filename = models.CharField(max_length=50)
-    # pub_date = models.DateTimeField('date published')
-    # pid = models.CharField(max_length=50)
-    # name = models.CharField(max_length=50)
-    # sex = models.CharField(max_length=5)
-    # age = models.IntegerField()
-    # mp = models.IntegerField()
+    pid = models.CharField(max_length=50, null=True)
+    filename = models.CharField(max_length=50,null=True)
+    #pub_date = models.DateTimeField('date published')
+    #name = models.CharField(max_length=50)
+    sex = models.CharField(max_length=1,null=True)
+    age = models.CharField(null=True)
+    mp = models.CharField(null=True)
+    scantype = models.CharField(max_length=15,null=True)
+    fracture = models.CharField(null=True)
+    tscore = models.CharField(null=True)
+    zscore = models.CharField(null=True)
+    region = models.CharField(null=True)
+    lva = models.CharField(null=True)
+    apspine = models.CharField(null=True)
+    dualfemur = models.CharField(null=True)
+    combination = models.CharField(null=True)
+
 
     def __unicode__(self):
         return self.filename

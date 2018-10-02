@@ -134,14 +134,15 @@ def upload_dcm(request):
             shutil.move('media/'+myfile, 'media/DCM/'+myfile)
             dcmFilePath = 'media/DCM/' + myfile
 
-            # db test
-            fileInstance = File(filename=fileName)
-            fileInstance.save()
+            # # db test
+            # fileInstance = File(filename=fileName)
+            # fileInstance.save()
 
             # read file
             dataset = pydicom.dcmread(dcmFilePath) 
 
             data = patient_data(dataset)
+
             pid = data['pid']
             name = data['name']
             sex = data['sex']
@@ -180,6 +181,10 @@ def upload_dcm(request):
                     fracture = fracture.split('</')[0].split('>')[1]
                     response['fracture'] = fracture
 
+                    # save to DB
+                    fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scantype, lva=lva)
+                    fileInstance.save()
+
                 # at least one scanType:
                 else:
                     comments = t_z_r(comment)
@@ -205,6 +210,11 @@ def upload_dcm(request):
                             while 'None' in lva:
                                 lva.remove(substring)
                             response['lva'] = lva
+
+                            # save to DB
+                            fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, scantype=scantype, lva=lva)
+                            fileInstance.save()
+
                         # AP Spine
                         elif scanType == 'AP Spine':
                             APSpine = list(zip(region, tscore, zscore))
