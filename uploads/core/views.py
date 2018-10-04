@@ -176,13 +176,14 @@ def upload_dcm(request):
 
                 # 02 frax: major fracture
                 if length == 0:
+                    response['scanType'] = 'FRAX'
                     keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
                     fracture = ''.join(keyword)
                     fracture = fracture.split('</')[0].split('>')[1]
                     response['fracture'] = fracture
 
                     # save to DB
-                    fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scantype, lva=lva)
+                    fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype='FRAX', fracture=fracture)
                     fileInstance.save()
 
                 # at least one scanType:
@@ -212,17 +213,26 @@ def upload_dcm(request):
                             response['lva'] = lva
 
                             # save to DB
-                            fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, scantype=scantype, lva=lva)
+                            fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, lva=lva)
                             fileInstance.save()
 
                         # AP Spine
                         elif scanType == 'AP Spine':
                             APSpine = list(zip(region, tscore, zscore))
                             response['APSpine'] = APSpine
+
+                            # save to DB
+                            fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
+                            fileInstance.save()
+
                         # Dual Femur
                         elif scanType == 'DualFemur':
                             DualFemur = list(zip(region, tscore, zscore))
                             response['DualFemur'] = DualFemur
+
+                            # save to DB
+                            fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
+                            fileInstance.save()
 
                         else:
                             print('error input')
@@ -236,7 +246,11 @@ def upload_dcm(request):
                         T7 = [s for s in comment if "DEFORMITY" in s]
                         T7 = ''.join(T7)
                         T7 = T7.split('</')[0].split('>')[1]
-                        response['T7'] = T7   
+                        response['T7'] = T7
+
+                        # save to DB
+                        fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype='combination', tscore=tscore, zscore=zscore, region=region, combination=combination, t7=T7)
+                        fileInstance.save()
 
             uploaded_file_url = fs.url(myfile)
         response['uploaded_file_url'] = uploaded_file_url
@@ -312,6 +326,12 @@ def upload_zip(request):
             response['file_dir_list'] = file_dir_list
 
             response['uploaded_file_url'] = fs.url(myZipFile)
+
+            print('='*50)
+            # upload each files' data to DB
+            for files in zipFilePath:
+                for file in files:
+                    print(file)
             
             return render(request, 'core/upload_zip.html', {
                 'form': form,
