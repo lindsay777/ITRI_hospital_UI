@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, HttpResponseRedirect
-from .models import File
+from .models import PATIENT, FRAX, LVA, APSPINE, DUALFEMUR, COMBINATION
 
 from uploads.core.models import Document
-from uploads.core.forms import DocumentForm
+#from uploads.core.forms import DocumentForm
 
 from os import listdir
 from os.path import isfile, join
@@ -98,6 +98,126 @@ def t_z_r(comment):
     comments['region'] = region
     return comments
 
+def read_dcm(dcmFilePath):
+    # read file
+    dataset = pydicom.dcmread(dcmFilePath) 
+
+    data = patient_data(dataset)
+
+    pid = data['pid']
+    name = data['name']
+    sex = data['sex']
+    age = data['age']
+    mp = data['mp']
+
+    response={
+        'pid': pid,
+        'name': name,
+        'sex': sex,
+        'age': age,
+        'mp': mp,
+        'dataset': dataset,
+    } 
+
+    # save to DB
+    fileInstance = PATIENT(pid=pid, filename=dcmFilePath, name=name, sex=sex, age=age, mp=mp)
+
+    # ----- get image report from IMG file -----  
+    # pydicom example: https://goo.gl/SMyny4
+    try:
+        dataset.pixel_array
+        if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
+            # must add a '/' ahead
+            response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
+
+    # -------- get value from STR file --------
+    except:   
+        comment = dataset.ImageComments
+        comment = comment.split('><')
+
+        match = [s for s in comment if "SCAN type" in s]
+        length = len(match)
+
+        # 02 frax: major fracture
+        if length == 0:
+            response['scanType'] = 'FRAX'
+            keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
+            fracture = ''.join(keyword)
+            fracture = fracture.split('</')[0].split('>')[1]
+            response['fracture'] = fracture
+
+            # save to DB
+            fileInstance = FRAX(pid=pid, scantype='FRAX', fracture=fracture)
+
+        # at least one scanType:
+        else:
+            comments = t_z_r(comment)
+            tscore = comments['tscore']
+            zscore = comments['zscore']
+            region = comments['region']
+            response['tscore'] = tscore
+            response['zscore'] = zscore
+            response['region'] = region
+            
+            # classify through scanType
+            if length == 1:
+                scanType = ''.join(match)
+                scanType = scanType.split('"')[1]
+                response['scanType'] = scanType
+                # LVA
+                if scanType == 'LVA':
+                    keyword = [s for s in comment if "DEFORMITY" in s]
+                    lva=[]
+                    for substring in keyword:
+                        substring = substring.split('</')[0].split('>')[1]
+                        lva.append(substring)
+                    while 'None' in lva:
+                        lva.remove(substring)
+                    response['lva'] = lva
+
+                    # save to DB
+                    fileInstance = LVA(pid=pid, scantype=scanType, lva=lva)
+                    
+
+                # AP Spine
+                elif scanType == 'AP Spine':
+                    APSpine = list(zip(region, tscore, zscore))
+                    response['APSpine'] = APSpine
+
+                    # save to DB
+                    fileInstance = APSPINE(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
+                    
+
+                # Dual Femur
+                elif scanType == 'DualFemur':
+                    DualFemur = list(zip(region, tscore, zscore))
+                    response['DualFemur'] = DualFemur
+
+                    # save to DB
+                    fileInstance = DUALFEMUR(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
+
+                else:
+                    print('error input')
+
+            # multi scanType: combination
+            elif length == 3:
+                scanType = 'combination'
+                response['scanType'] = scanType
+                
+                del region[1:4]
+                combination = list(zip(region, tscore, zscore))
+                response['combination'] = combination
+                # get LVA
+                T7 = [s for s in comment if "DEFORMITY" in s]
+                T7 = ''.join(T7)
+                T7 = T7.split('</')[0].split('>')[1]
+                response['T7'] = T7
+
+                # save to DB
+                fileInstance = COMBINATION(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, lva=lva, apspine=APSpine, dualfemur=DualFemur, combination=combination, t7=T7)
+
+            fileInstance.save()
+
 def model_form_upload(request):
     documents = Document.objects.all()
     if request.method == 'POST':
@@ -184,7 +304,7 @@ def upload_dcm(request):
 
                     # save to DB
                     fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype='FRAX', fracture=fracture)
-                    fileInstance.save()
+                    
 
                 # at least one scanType:
                 else:
@@ -214,7 +334,7 @@ def upload_dcm(request):
 
                             # save to DB
                             fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, lva=lva)
-                            fileInstance.save()
+                            
 
                         # AP Spine
                         elif scanType == 'AP Spine':
@@ -223,7 +343,7 @@ def upload_dcm(request):
 
                             # save to DB
                             fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
-                            fileInstance.save()
+                            
 
                         # Dual Femur
                         elif scanType == 'DualFemur':
@@ -232,7 +352,7 @@ def upload_dcm(request):
 
                             # save to DB
                             fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
-                            fileInstance.save()
+                            
 
                         else:
                             print('error input')
@@ -250,7 +370,8 @@ def upload_dcm(request):
 
                         # save to DB
                         fileInstance = File(pid=pid, filename=fileName, sex=sex, age=age, mp=mp, scantype='combination', tscore=tscore, zscore=zscore, region=region, combination=combination, t7=T7)
-                        fileInstance.save()
+                    
+                    fileInstance.save()
 
             uploaded_file_url = fs.url(myfile)
         response['uploaded_file_url'] = uploaded_file_url
@@ -290,19 +411,29 @@ def upload_zip(request):
             return render(request, 'core/upload_zip.html', response)
         
         else: 
+            DCMFiles = []
             # move file form media/ to media/zip/ folder
             shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
             # read zip file
             zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
+            print("="*30)
             # extract zip file
             for file in zip_file.namelist():
                 zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
+                print(file)
+                if ".dcm" in file.lower():
+                    DCMFiles.append(file)
+            print(DCMFiles)
+
+            for file in DCMFiles:
+                dcmFilePath = 'media/ZIP/' + file
+                
 
             response={
                 'myZipFile': myZipFile,
                 'zipFilePath': zipFilePath,
             }
-
+            # ================directory tree================
             # directory tree
             dir_tree = []
             # contain '.dcm' files 
@@ -326,12 +457,6 @@ def upload_zip(request):
             response['file_dir_list'] = file_dir_list
 
             response['uploaded_file_url'] = fs.url(myZipFile)
-
-            print('='*50)
-            # upload each files' data to DB
-            for files in zipFilePath:
-                for file in files:
-                    print(file)
             
             return render(request, 'core/upload_zip.html', {
                 'form': form,

@@ -1,7 +1,7 @@
 from django import forms
 
 from uploads.core.models import Document
-from uploads.core.models import File
+#from uploads.core.models import File
 
 # 創造一個依照model的form，會繼承欄位description document
 class DocumentForm(forms.ModelForm):
