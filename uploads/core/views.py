@@ -83,7 +83,6 @@ def patient_data(filepath, filename):
 
 def str_data(dataset):
     response = {}
-    print(dataset)
     pid = dataset.PatientID
     comment = dataset.ImageComments
     comment = comment.split('><')
@@ -212,19 +211,6 @@ def read_dcm(dcmFilePath):
     # get data from DB
     print('hello')
 
-def model_form_upload(request):
-    documents = Document.objects.all()
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-    else:
-        form = DocumentForm()
-    return render(request, 'core/model_form_upload.html', {
-        'form': form,
-        'documents': documents,
-    })
-
 def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
@@ -250,6 +236,7 @@ def upload_dcm(request):
             shutil.move('media/'+myfile, 'media/DCM/'+myfile)
             dcmFilePath = 'media/DCM/' + myfile
 
+            # patient_data & upload to DB
             data = patient_data(dcmFilePath, myfile)
             dataset = data['dataset']
             response.update(data)
@@ -264,10 +251,11 @@ def upload_dcm(request):
 
             # -------- get value from STR file --------
             except:   
+                # str_data & upload to DB
                 response.update(str_data(dataset))
 
             uploaded_file_url = fs.url(myfile)
-        response['uploaded_file_url'] = uploaded_file_url
+            response['uploaded_file_url'] = uploaded_file_url
 
         return render(request, 'core/upload_dcm.html', response)
     else:
@@ -275,14 +263,6 @@ def upload_dcm(request):
         
 def upload_zip(request):
     if request.method == 'POST' and request.FILES['myfile']:
-        # form = DocumentForm(request.POST, request.FILES)
-        # if form.is_valid(): #TODO: 
-        #     print('hi')
-        #     form.save()
-        # else:
-        #     print('XXXXX')
-        #     form = DocumentForm()
-
         response = {}
 
         myfile = request.FILES['myfile']
@@ -312,15 +292,13 @@ def upload_zip(request):
             shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
             # read zip file
             zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
-            print("="*30)
             # extract zip file
             for file in zip_file.namelist():
                 zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
-                print(file)
                 if ".dcm" in file.lower():
                     DCMFiles.append(file)
-            print(DCMFiles)
 
+            # read each file and save to DB
             for file in DCMFiles:
                 dcmFilePath = 'media/ZIP/' + file
 
@@ -335,7 +313,6 @@ def upload_zip(request):
                 # -------- get value from STR file --------
                 except:   
                     response.update(str_data(dataset))
-                print(dcmFilePath)
             response.update(patient_data(dcmFilePath, file))
 
             response={
@@ -367,14 +344,11 @@ def upload_zip(request):
 
             response['uploaded_file_url'] = fs.url(myZipFile)
             
-            return render(request, 'core/upload_zip.html', {
-                # 'form': form,
-                'response': response
-            })
+            return render(request, 'core/upload_zip.html', response)
     else: 
         return render(request, 'core/upload_zip.html')
 
-def upload_multi_zip(request):
+def upload_multi_zip(request): #批次處理 未做
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
@@ -438,7 +412,8 @@ def upload_multi_zip(request):
     else: 
         return render(request, 'core/upload_multi_zip.html')
 
-def show_zip(request):
+def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
+    response = {}
     zipFolder = request.session['myZipFile']
     zipFolder = list(zipFolder)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
@@ -454,23 +429,9 @@ def show_zip(request):
         filePath = 'media/ZIP/' + zipFolder + '/SDY00000/SRS00000/' + myfile
 
     # read file
-    dataset = pydicom.dcmread(filePath) 
-
-    data = patient_data(dataset)
-    pid = data['pid']
-    name = data['name']
-    sex = data['sex']
-    age = data['age']
-    mp = data['mp']
-
-    response={
-        'pid': pid,
-        'name': name,
-        'sex': sex,
-        'age': age,
-        'mp': mp,
-        'dataset': dataset,
-    }
+    data = patient_data(filePath, myfile)
+    dataset = data['dataset']
+    response.update(data)
 
      # ----- get image report from IMG file -----  
     # pydicom example: https://goo.gl/SMyny4
@@ -483,71 +444,7 @@ def show_zip(request):
 
     # -------- get value from STR file --------
     except:
-        comment = dataset.ImageComments
-        comment = comment.split('><')
-
-        match = [s for s in comment if "SCAN type" in s]
-        length = len(match)
-
-        # no scanType: major fracture
-        if length == 0:
-            response['scanType'] = 'FRAX'
-            keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
-            fracture = ''.join(keyword)
-            fracture = fracture.split('</')[0].split('>')[1]
-            response['fracture'] = fracture
-
-        # at least one scanType:
-        else:
-            comments = t_z_r(comment)
-            tscore = comments['tscore']
-            zscore = comments['zscore']
-            region = comments['region']
-            response['tscore'] = tscore
-            response['zscore'] = zscore
-            response['region'] = region
-            
-            # classify through scanType
-            if length == 1:
-                scanType = ''.join(match)
-                scanType = scanType.split('"')[1]
-                response['scanType'] = scanType
-                # LVA
-                if scanType == 'LVA':
-                    keyword = [s for s in comment if "DEFORMITY" in s]
-                    print(keyword)
-                    lva=[]
-                    for substring in keyword:
-                        substring = substring.split('</')[0].split('>')[1]
-                        lva.append(substring)
-                        print(substring)
-                        while 'None' in lva:
-                            lva.remove(substring)
-                    response['lva'] = lva
-                    print(lva)
-                # AP Spine
-                elif scanType == 'AP Spine':
-                    APSpine = list(zip(region, tscore, zscore))
-                    response['APSpine'] = APSpine
-                # Dual Femur
-                elif scanType == 'DualFemur':
-                    DualFemur = list(zip(region, tscore, zscore))
-                    response['DualFemur'] = DualFemur
-
-                else:
-                    print('error input')
-
-            # multi scanType: combination
-            else:
-                del region[1:4]
-                combination = list(zip(region, tscore, zscore))
-                response['combination'] = combination
-                # get LVA
-                # TODO: file 494 STR03 problem??
-                T7 = [s for s in comment if "DEFORMITY" in s]
-                T7 = ''.join(T7)
-                T7 = T7.split('</')[0].split('>')[1]
-                response['T7'] = T7   
+        response.update(str_data(dataset))
 
     return render(request, 'core/show_zip.html', response)
 
@@ -582,7 +479,7 @@ def manage_dcm(request):
     })
 
 def show_dcm(request):
-
+    response = {}
     # get the file user clicked from template
     myfile = request.GET.get('file', None)
     request.session['myfile'] = myfile
@@ -594,25 +491,10 @@ def show_dcm(request):
     filePath = 'media/DCM/' + myfile
     request.session['filePath'] = filePath
 
-    # read file
-    dataset = pydicom.dcmread(filePath)
-
-    data = patient_data(dataset)
-    pid = data['pid']
-    name = data['name']
-    sex = data['sex']
-    age = data['age']
-    mp = data['mp']
-
-    response={
-        'filePath': filePath,
-        'pid': pid,
-        'name': name,
-        'sex': sex,
-        'age': age,
-        'mp': mp,
-        'dataset': dataset,
-    }
+    # patient_data & upload to DB
+    data = patient_data(filePath, myfile)
+    dataset = data['dataset']
+    response.update(data)
 
     # ----- get image report from IMG file -----  
     # pydicom example: https://goo.gl/SMyny4
@@ -625,66 +507,8 @@ def show_dcm(request):
 
     # -------- get value from STR file --------
     except:
-        comment = dataset.ImageComments
-        comment = comment.split('><')
-
-        match = [s for s in comment if "SCAN type" in s]
-        length = len(match)
-
-        # no scanType: major fracture
-        if length == 0:
-            keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
-            fracture = ''.join(keyword)
-            fracture = fracture.split('</')[0].split('>')[1]
-            response['fracture'] = fracture
-
-        # at least one scanType:
-        else:
-            comments = t_z_r(comment)
-            tscore = comments['tscore']
-            zscore = comments['zscore']
-            region = comments['region']
-            response['tscore'] = tscore
-            response['zscore'] = zscore
-            response['region'] = region
-            
-            # classify through scanType
-            if length == 1:
-                scanType = ''.join(match)
-                scanType = scanType.split('"')[1]
-                response['scanType'] = scanType
-                # LVA
-                if scanType == 'LVA':
-                    keyword = [s for s in comment if "DEFORMITY" in s]
-                    lva=[]
-                    for substring in keyword:
-                        substring = substring.split('</')[0].split('>')[1]
-                        lva.append(substring)
-                    while 'None' in lva:
-                        lva.remove(substring)
-                    response['lva'] = lva
-                # AP Spine
-                elif scanType == 'AP Spine':
-                    APSpine = list(zip(region, tscore, zscore))
-                    response['APSpine'] = APSpine
-                # Dual Femur
-                elif scanType == 'DualFemur':
-                    DualFemur = list(zip(region, tscore, zscore))
-                    response['DualFemur'] = DualFemur
-
-                else:
-                    print('error input')
-
-            # multi scanType: combination
-            else:
-                del region[1:4]
-                combination = list(zip(region, tscore, zscore))
-                response['combination'] = combination
-                # get LVA
-                T7 = [s for s in comment if "DEFORMITY" in s]
-                T7 = ''.join(T7)
-                T7 = T7.split('</')[0].split('>')[1]
-                response['T7'] = T7
+        # str_data & upload to DB
+        response.update(str_data(dataset))
 
     return render(request, 'core/show_dcm.html', response)
 
@@ -833,7 +657,7 @@ def check_apspine(request):
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
 
-    data = patient_data(dataset)
+    data = patient_data(apspineFilePath, zipFolder)
     pid = data['pid']
     name = data['name']
     age = data['age']
@@ -1102,24 +926,3 @@ def download(request):
                 return render(request, 'core/show_dcm.html')
             elif fileType.startswith('zip'):
                 return render(request, 'core/manage_show_zip.html')
-
-def handle_uploaded_file(f):
-    with open('some/file/name.txt', 'wb+') as destination:
-        for chunk in f.chunks():
-            destination.write(chunk)
-
-def upload_to_db(request):
-    lastfile= File.objects.last()
-    filepath= lastfile.filepath
-    filename= lastfile.name
-
-    form= FileForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        form.save()
-   
-    context= {'filepath': filepath,
-              'form': form,
-              'filename': filename
-              }  
-      
-    return render(request, 'Blog/files.html', context)

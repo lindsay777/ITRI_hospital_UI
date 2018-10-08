@@ -8,24 +8,24 @@
 <blockquote>
   <table border="1">
     <tr>
-      <td style="width:220px">Patient ID</td>
-      <td style="width:500px">{{ pid }}</td>
+      <td style="width:250px">Patient ID</td>
+      <td style="width:600px">{{ pid }}</td>
     </tr>
     <tr>
-      <td>Patient Name</td>
-      <td>{{ name }}</td>
+      <td style="width:250px">Patient Name</td>
+      <td style="width:600px">{{ name }}</td>
     </tr>
     <tr>
-      <td>Sex</td>
-      <td>{{ sex }}</td>
+      <td style="width:250px">Sex</td>
+      <td style="width:600px">{{ sex }}</td>
     </tr>
     <tr>
-      <td>Age</td>
-      <td>{{ age }}</td>
+      <td style="width:250px">Age</td>
+      <td style="width:600px">{{ age }}</td>
     </tr>
     <tr>
-      <td>MP age</td>
-      <td>{{ mp }}</td>
+      <td style="width:250px">MP age</td>
+      <td style="width:600px">{{ mp }}</td>
     </tr>
   </table>
 </blockquote>
@@ -36,59 +36,59 @@
 <blockquote>
   <table border="1">
     <tr>
-      <td style="width:220px">Scan Type</td>
-      <td style="width:500px">{{ scanType }}</td>
+      <td style="width:250px">Scan Type</td>
+      <td style="width:600px">{{ scanType }}</td>
     </tr>
     {% if region %}
       <tr>
-        <td>Region</td>
-        <td>{{ region }}</td>
+        <td style="width:250px">Region</td>
+        <td style="width:600px">{{ region }}</td>
       </tr>
     {% endif %}
     {% if tscore %}
       <tr>
-        <td>T-score</td>
-        <td>{{ tscore }}</td>
+        <td style="width:250px">T-score</td>
+        <td style="width:600px">{{ tscore }}</td>
       </tr>
     {% endif %}
     {% if zscore %}
       <tr>
-        <td>Z-score</td>
-        <td>{{ zscore }}</td>
+        <td style="width:250px">Z-score</td>
+        <td style="width:600px">{{ zscore }}</td>
       </tr>
     {% endif %}
     {% if APSpine %}
       <tr>
-        <td>APSpine</td>
-        <td>{{ APSpine }}</td>
+        <td style="width:250px">APSpine</td>
+        <td style="width:600px">{{ APSpine }}</td>
       </tr>
     {% endif %}
     {% if DualFemur %}
       <tr>
-        <td>DualFemur</td>
-        <td>{{ DualFemur }}</td>
+        <td style="width:250px">DualFemur</td>
+        <td style="width:600px">{{ DualFemur }}</td>
       </tr>
     {% endif %}
     {% if fracture %}
       <tr>
-        <td>Fracture</td>
-        <td>{{ fracture }}</td>
+        <td style="width:250px">Fracture</td>
+        <td style="width:600px">{{ fracture }}</td>
       </tr>
     {% endif %}
     {% if combination and T7 %}
       <tr>
-        <td>(Region, T-score, Z-score)</td>
-        <td>{{ combination }}</td>
+        <td style="width:250px">(Region, T-score, Z-score)</td>
+        <td style="width:600px">{{ combination }}</td>
       </tr>
       <tr>
-        <td>T7</td>
-        <td>{{ T7 }}</td>
+        <td style="width:250px">T7</td>
+        <td style="width:600px">{{ T7 }}</td>
       </tr>
     {% endif %}
     {% if lva %}
       <tr>
-        <td>LVA</td>
-        <td>{{ lva }}</td>
+        <td style="width:250px">LVA</td>
+        <td style="width:600px">{{ lva }}</td>
       </tr>
     {% endif %}
   </table>

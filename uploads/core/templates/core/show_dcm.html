@@ -26,24 +26,24 @@
   <blockquote>
     <table border="1">
       <tr>
-        <td style="width:100px">Patient ID</td>
-        <td style="width:400px">{{ pid }}</td>
+        <td style="width:250px">Patient ID</td>
+        <td style="width:600px">{{ pid }}</td>
       </tr>
       <tr>
-        <td>Patient Name</td>
-        <td>{{ name }}</td>
+        <td style="width:250px">Patient Name</td>
+        <td style="width:600px">{{ name }}</td>
       </tr>
       <tr>
-        <td>Sex</td>
-        <td>{{ sex }}</td>
+        <td style="width:250px">Sex</td>
+        <td style="width:600px">{{ sex }}</td>
       </tr>
       <tr>
-        <td>Age</td>
-        <td>{{ age }}</td>
+        <td style="width:250px">Age</td>
+        <td style="width:600px">{{ age }}</td>
       </tr>
       <tr>
-        <td>MP age</td>
-        <td>{{ mp }}</td>
+        <td style="width:250px">MP age</td>
+        <td style="width:600px">{{ mp }}</td>
       </tr>
     </table>
   </blockquote>
@@ -54,60 +54,60 @@
     <table border="1">
       {% if scanType %}
         <tr>
-          <td style="width:100px">scan type</td>
-          <td style="width:400px">{{ scanType }}</td>
+          <td style="width:250px">scan type</td>
+          <td style="width:600px">{{ scanType }}</td>
         </tr>
       {% endif %}
       {% if region %}
         <tr>
-          <td>region</td>
-          <td>{{ region }}</td>
+          <td style="width:250px">region</td>
+          <td style="width:600px">{{ region }}</td>
         </tr>
       {% endif %}
       {% if tscore %}
         <tr>
-          <td>T-score</td>
-          <td>{{ tscore }}</td>
+          <td style="width:250px">T-score</td>
+          <td style="width:600px">{{ tscore }}</td>
         </tr>
       {% endif %}
       {% if zscore %}
         <tr>
-          <td>Z-score</td>
-          <td>{{ zscore }}</td>
+          <td style="width:250px">Z-score</td>
+          <td style="width:600px">{{ zscore }}</td>
         </tr>
       {% endif %}
       {% if APSpine %}
         <tr>
-          <td>AP Spine</td>
-          <td>{{ APSpine }}</td>
+          <td style="width:250px">AP Spine</td>
+          <td style="width:600px">{{ APSpine }}</td>
         </tr>
       {% endif %}
       {% if DualFemur %}
         <tr>
-          <td>Dual Femur</td>
-          <td>{{ DualFemur }}</td>
+          <td style="width:250px">Dual Femur</td>
+          <td style="width:600px">{{ DualFemur }}</td>
         </tr>
       {% endif %}
       {% if fracture %}
         <tr>
-          <td>Major Osteoporotic Fracture</td>
-          <td>{{ fracture }}</td>
+          <td style="width:250px">Major Osteoporotic Fracture</td>
+          <td style="width:600px">{{ fracture }}</td>
         </tr>
       {% endif %}
       {% if combination and T7 %}
         <tr>
-          <td>combination</td>
-          <td>{{ combination }}</td>
+          <td style="width:250px">combination</td>
+          <td style="width:600px">{{ combination }}</td>
         </tr>
         <tr>
-            <td>T7</td>
-            <td>{{ T7 }}</td>
+            <td style="width:250px">T7</td>
+            <td style="width:600px">{{ T7 }}</td>
           </tr>
       {% endif %}
       {% if lva %}
         <tr>
-          <td>LVA</td>
-          <td>{{ lva }}</td>
+          <td style="width:250px">LVA</td>
+          <td style="width:600px">{{ lva }}</td>
         </tr>
       {% endif %}
     </table>

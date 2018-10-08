@@ -8,8 +8,6 @@ from uploads.core import views
 # 把url 跟views串起來!!
 urlpatterns = [
     url(r'^$', views.home, name='home'),
-    url(r'^uploads/form/$', views.model_form_upload, name='model_form_upload'),
-    url(r'^uploads/uploadDCM/$', views.upload_dcm, name='upload_dcm'),
     url(r'^uploads/uploadDCM/$', views.upload_dcm, name='upload_dcm'),
     url(r'^uploads/uploadZIP/$', views.upload_zip, name='upload_zip'),
     url(r'^uploads/uploadMultiZIP/$', views.upload_multi_zip, name='upload_multi_zip'),
@@ -23,7 +21,6 @@ urlpatterns = [
     url(r'^uploads/manageShowZIP/$', views.manage_show_zip, name='manage_show_zip'),
     url(r'^uploads/checkAPSpine/$', views.check_apspine, name='check_apspine'),
     url(r'^uploads/report/$', views.report, name='report'),
-    url(r'^uploads/uploadDB/$', views.upload_to_db, name='upload_to_db'),
     url(r'^admin/', admin.site.urls),
 ]
 

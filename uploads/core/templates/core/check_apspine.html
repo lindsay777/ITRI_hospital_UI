@@ -7,24 +7,24 @@
   <blockquote>
     <table border="1">
       <tr>
-        <td style="width:220px">Patient ID</td>
-        <td style="width:500px">{{ pid }}</td>
+        <td style="width:250px">Patient ID</td>
+        <td style="width:600px">{{ pid }}</td>
       </tr>
       <tr>
-        <td>Patient Name</td>
-        <td>{{ name }}</td>
+        <td style="width:250px">Patient Name</td>
+        <td style="width:600px">{{ name }}</td>
       </tr>
       <tr>
-        <td>Sex</td>
-        <td>{{ sex }}</td>
+        <td style="width:250px">Sex</td>
+        <td style="width:600px">{{ sex }}</td>
       </tr>
       <tr>
-        <td>Age</td>
-        <td>{{ age }}</td>
+        <td style="width:250px">Age</td>
+        <td style="width:600px">{{ age }}</td>
       </tr>
       <tr>
-        <td>MP age</td>
-        <td>{{ mp }}</td>
+        <td style="width:250px">MP age</td>
+        <td style="width:600px">{{ mp }}</td>
       </tr>
     </table>
   </blockquote>
@@ -34,16 +34,16 @@
   <blockquote>
     <table border="1">
       <tr>
-        <td style="width:220px">Region</td>
-        <td style="width:500px">{{ region }}</td>
+        <td style="width:250px">Region</td>
+        <td style="width:600px">{{ region }}</td>
       </tr>
       <tr>
-        <td>T-score</td>
-        <td>{{ tscore }}</td>
+        <td style="width:250px">T-score</td>
+        <td style="width:600px">{{ tscore }}</td>
       </tr>
       <tr>
-        <td>Z-score</td>
-        <td>{{ zscore }}</td>
+        <td style="width:250px">Z-score</td>
+        <td style="width:600px">{{ zscore }}</td>
       </tr>
     </table>
   </blockquote>
@@ -53,12 +53,12 @@
   <blockquote>
     <table border="1">
       <tr>
-        <td style="width:220px">Group-by</td>
-        <td style="width:500px">{{ group }}-score</td>
+        <td style="width:250px">Group-by</td>
+        <td style="width:600px">{{ group }}-score</td>
       </tr>
       <tr>
-        <td>Mean</td>
-        <td>{{ mean }}</td>
+        <td style="width:250px">Mean</td>
+        <td style="width:600px">{{ mean }}</td>
       </tr>
       <tr>
         <td rowspan="2">Aver. Deviation</td>
@@ -68,16 +68,16 @@
         <td>{{ dist2 }}</td>
       </tr>
       <tr>
-        <td>Region Filter</td>
-        <td>{{ regionFilter }}</td>
+        <td style="width:250px">Region Filter</td>
+        <td style="width:600px">{{ regionFilter }}</td>
       </tr>
       <tr>
-        <td>SR</td>
-        <td>{{ machineOutcome }}</td>
+        <td style="width:250px">SR</td>
+        <td style="width:600px">{{ machineOutcome }}</td>
       </tr>
       <tr>
-        <td>SRi</td>
-        <td>{{ outcome }}</td>
+        <td style="width:250px">SRi</td>
+        <td style="width:600px">{{ outcome }}</td>
       </tr>
     </table>
   </blockquote>
@@ -92,19 +92,19 @@
     <table border="1">
       {% if grade %}
         <tr>
-          <td colspan="2" style="width:220px">LVA Grade</td>
-          <td style="width:500px">{{ grade }}</td>
+          <td style="width:250px" colspan="2">LVA Grade</td>
+          <td style="width:600px">{{ grade }}</td>
         </tr>
       {% endif %}
       {% if majorFrac and hipFrac%}
         <tr>
           <td rowspan="2">Frax</td>
           <td>Major Osteoporotic Fracture</td>
-          <td>{{ majorFrac }}</td>
+          <td style="width:600px">{{ majorFrac }}</td>
         </tr>
         <tr>
           <td>Hip Fracture</td>
-          <td>{{ hipFrac }}</td>
+          <td style="width:600px">{{ hipFrac }}</td>
         </tr>
       {% endif %}
     </table>
