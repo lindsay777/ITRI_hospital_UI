@@ -5,7 +5,6 @@ from django.conf.urls.static import static
 
 from uploads.core import views
 
-# 把url 跟views串起來!!
 urlpatterns = [
     url(r'^$', views.home, name='home'),
     url(r'^uploads/uploadDCM/$', views.upload_dcm, name='upload_dcm'),
