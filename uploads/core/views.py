@@ -42,8 +42,7 @@ def home(request):
     documents = Document.objects.all()
     return render(request, 'core/home.html', { 'documents': documents })
 
-def patient_data(filepath, filename):
-    data={}
+def patient_data(filepath, filename): # write into DB
     # read file
     dataset = pydicom.dcmread(filepath) 
 
@@ -81,7 +80,7 @@ def patient_data(filepath, filename):
     fileInstance.save()
     return response
 
-def str_data(dataset):
+def str_data(dataset): #write into DB
     response = {}
     pid = dataset.PatientID
     comment = dataset.ImageComments
@@ -100,7 +99,7 @@ def str_data(dataset):
 
         # save to DB
         fileInstance = FRAX(pid=pid, scantype='FRAX', fracture=fracture)
-
+        fileInstance.save()
     # at least one scanType:
     else:
         comments = t_z_r(comment)
@@ -128,14 +127,14 @@ def str_data(dataset):
                 response['lva'] = lva
                 # save to DB
                 fileInstance = LVA(pid=pid, scantype=scanType, lva=lva)
-
+                fileInstance.save()
             # AP Spine
             elif scanType == 'AP Spine':
                 APSpine = list(zip(region, tscore, zscore))
                 response['APSpine'] = APSpine
                 # save to DB
                 fileInstance = APSPINE(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
-                
+                fileInstance.save()
 
             # Dual Femur
             elif scanType == 'DualFemur':
@@ -143,7 +142,7 @@ def str_data(dataset):
                 response['DualFemur'] = DualFemur
                 # save to DB
                 fileInstance = DUALFEMUR(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
-
+                fileInstance.save()
             else:
                 print('error input')
 
@@ -179,8 +178,7 @@ def str_data(dataset):
 
             # save to DB
             fileInstance = COMBINATION(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, lva=lva, apspine=APSpine, dualfemur=DualFemur, combination=combination, t7=T7)
-
-    fileInstance.save()
+            fileInstance.save()
     return response
 
 def t_z_r(comment):
@@ -190,6 +188,7 @@ def t_z_r(comment):
     for substring in match_tscore:
         substring = substring.split('</')[0].split('>')[1]
         tscore.append(substring)
+    print(tscore)
     comments['tscore'] = tscore
 
     match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
@@ -197,6 +196,7 @@ def t_z_r(comment):
     for substring in match_zscore:
         substring = substring.split('</')[0].split('>')[1]
         zscore.append(substring)
+    print(zscore)
     comments['zscore'] = zscore
 
     match_region = [s for s in comment if "ROI region" in s]
@@ -205,6 +205,11 @@ def t_z_r(comment):
         substring = substring.split('"')[1]
         region.append(substring)
     comments['region'] = region
+
+    comments['str_region'] = ', '.join(region)
+    comments['str_tscore'] = ', '.join(tscore)
+    comments['str_zscore'] = ', '.join(zscore)
+
     return comments
 
 def read_dcm(dcmFilePath):
@@ -441,7 +446,6 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
             # must add a '/' ahead
             response['report'] = '/media/ZIP/JPG/' + fileName + '_report.jpg'
 
-
     # -------- get value from STR file --------
     except:
         response.update(str_data(dataset))
@@ -595,7 +599,6 @@ def check_apspine(request):
     # need: apspine, lva, frax
     # get the file name user clicked from template
     myZIPFile = request.session['myfile']
-    print(myZIPFile)
     zipFolder = list(myZIPFile)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
 
@@ -614,7 +617,6 @@ def check_apspine(request):
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in lstFilesDCM:
         filesPath = strFilePath + files
-        print(filesPath)
         dataset = pydicom.dcmread(filesPath)
         comment = dataset.ImageComments
         comment = comment.split('><')
@@ -648,7 +650,6 @@ def check_apspine(request):
             # multi scanType: combination
             else:
                 file_combination = files
-        print(files)
 
     #TODO: show which file is not exist
     
@@ -657,31 +658,23 @@ def check_apspine(request):
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
 
-    data = patient_data(apspineFilePath, zipFolder)
-    pid = data['pid']
-    name = data['name']
-    age = data['age']
-    mp = data['mp']
-    sex = data['sex']
-
     comment = dataset.ImageComments
     comment = comment.split('><')
     comments = t_z_r(comment)
+
+    response['region'] = comments['str_region']
+    response['tscore'] = comments['str_tscore']
+    response['zscore'] = comments['str_zscore']
     region = comments['region']
     tscore = comments['tscore']
     zscore = comments['zscore']
-    response = {
-        'pid': pid,
-        'name': name,
-        'sex': sex,
-        'age': age,
-        'mp': mp,
-        'tscore': tscore,
-        'zscore': zscore,
-        'region': region,
-    }
 
+    data = patient_data(apspineFilePath, zipFolder)
+    # response.update(data)
+    
     # decide group
+    age = int(data['age'])
+    mp = int(data['mp'])
     if age<20:
         group = 'Z'
     elif 20<=age<50:
@@ -704,12 +697,18 @@ def check_apspine(request):
 
     # zip
     merge = list(zip(region, tscore, zscore))
+
     # get the outcome from the machine
     machineMerge = merge[4:]
-    machineOutcome = []
+
+    machineOutcome = ''
     for substring in machineMerge:
-        machineOutcome.append(substring[0])
+        if machineOutcome == '':
+            machineOutcome = str(substring[0])
+        else:
+            machineOutcome = machineOutcome + ', ' + str(substring[0])
     response['machineOutcome'] = machineOutcome
+
     merge = merge[:4]
 
     # sort(according to tscore or zscore)
@@ -717,8 +716,9 @@ def check_apspine(request):
         return float(item[1])
     def getZ(item):
         return float(item[2])
+
     if group == 'T':
-        merge = sorted(merge, key=getT)
+        merge = sorted(merge, key=getT)     
         # get mean and absolute value
         mean = (float(merge[1][1]) + float(merge[2][1]))/2
         dist1 = abs(float(merge[0][1]) - mean)
@@ -742,7 +742,7 @@ def check_apspine(request):
         regionFilter.remove(merge[0][0])
     if dist2 > 1:
         regionFilter.remove(merge[3][0])
-    response['regionFilter'] = regionFilter
+    response['regionFilter'] = ', '.join(regionFilter)
 
     # deal with value in '()'
     start = regionFilter[0]
@@ -783,9 +783,16 @@ def check_apspine(request):
             lva.append(substring)
         # zip two feature
         merge = list(zip(region, lva))
+
         # get outcome
-        grade = [s for s in merge if s[1] != 'None']
-        response['grade'] = grade
+        lvagrade = ''
+        for substring in merge:
+            if substring[1] != 'None':
+                if lvagrade == '':
+                    lvagrade = '(' + substring[0] + ', ' + substring[1] + ')'
+                else:
+                    lvagrade += ', ' + '(' + substring[0] + ', ' + substring[1] + ')'
+        response['grade'] = lvagrade
 
         # Obtain frax
         fraxFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_frax
@@ -799,14 +806,20 @@ def check_apspine(request):
         majorFrac = ''.join(majorFrac)
         majorFrac = majorFrac.split('</')[0].split('>')[1]
         response['majorFrac'] = majorFrac
-        #get hip frac
+        # get hip frac
         hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
         hipFrac = ''.join(hipFrac)
         hipFrac = hipFrac.split('</')[0].split('>')[1]
         response['hipFrac'] = hipFrac
 
-        print(response)
+        #TODO: Object of type 'bytes' is not JSON serializable
         request.session['reportVar'] = response
+        # for key in list(response.keys()):
+        #     request.session[key] = response[key]
+            # print(key)
+
+        # must add after session
+        response.update(data)
         return render(request, 'core/check_apspine.html', response)
 
     else:
