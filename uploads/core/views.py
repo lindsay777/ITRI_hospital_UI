@@ -674,7 +674,9 @@ def check_apspine(request):
     
     # decide group
     age = int(data['age'])
-    mp = int(data['mp'])
+    mp = data['mp']
+    sex = data['sex']
+
     if age<20:
         group = 'Z'
     elif 20<=age<50:
@@ -813,7 +815,7 @@ def check_apspine(request):
         response['hipFrac'] = hipFrac
 
         #TODO: Object of type 'bytes' is not JSON serializable
-        request.session['reportVar'] = response
+        #request.session['reportVar'] = response
         # for key in list(response.keys()):
         #     request.session[key] = response[key]
             # print(key)
@@ -823,7 +825,7 @@ def check_apspine(request):
         return render(request, 'core/check_apspine.html', response)
 
     else:
-        request.session['reportVar'] = response
+        #request.session['reportVar'] = response
         response['result'] = 'Warn!! Please Re-gen.'
 
     return render(request, 'core/check_apspine.html', response)

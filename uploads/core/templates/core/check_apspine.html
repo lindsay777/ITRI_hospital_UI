@@ -3,113 +3,107 @@
 {% load static %}
 
 {% block content %}
-  <li>Patient's Basic Data</li>
-  <blockquote>
-    <table border="1">
-      <tr>
-        <td style="width:250px">Patient ID</td>
-        <td style="width:600px">{{ pid }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">Patient Name</td>
-        <td style="width:600px">{{ name }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">Sex</td>
-        <td style="width:600px">{{ sex }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">Age</td>
-        <td style="width:600px">{{ age }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">MP age</td>
-        <td style="width:600px">{{ mp }}</td>
-      </tr>
-    </table>
-  </blockquote>
+  <h4>Patient's Basic Data</h4>
+  <table class="table table-bordered table-hover">
+    <tr>
+      <th width="30%" scope="row" style="background-color:#e2f4f9" scope="row">Patient ID</td>
+      <td>{{ pid }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Patient Name</th>
+      <td>{{ name }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Sex</th>
+      <td>{{ sex }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Age</th>
+      <td>{{ age }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">MP age</th>
+      <td>{{ mp }}</td>
+    </tr>
+  </table>
   <br>
 
-  <li>Data grab from ITRI system:</li>
-  <blockquote>
-    <table border="1">
-      <tr>
-        <td style="width:250px">Region</td>
-        <td style="width:600px">{{ region }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">T-score</td>
-        <td style="width:600px">{{ tscore }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">Z-score</td>
-        <td style="width:600px">{{ zscore }}</td>
-      </tr>
-    </table>
-  </blockquote>
+  <h4>Data grab from ITRI system:</h4>
+  <table class="table table-bordered table-hover">
+    <tr>
+      <th width="30%" scope="row" style="background-color:#e2f4f9">Region</th>
+      <td>{{ region }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">T-score</th>
+      <td>{{ tscore }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Z-score</th>
+      <td>{{ zscore }}</td>
+    </tr>
+  </table>
+   <br>
+
+  <h4>Analyze through ITRI system:</h4>
+  <table class="table table-bordered table-hover">
+    <tr>
+      <th width="30%" scope="row" style="background-color:#e2f4f9">Group-by</th>
+      <td>{{ group }}-score</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Mean</th>
+      <td>{{ mean }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9" rowspan="2">Aver. Deviation</td>
+      <td>{{ dist1 }}</td>
+    </tr>
+    <tr>
+      <td>{{ dist2 }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Region Filter</th>
+      <td>{{ regionFilter }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">SR</th>
+      <td>{{ machineOutcome }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">SRi</th>
+      <td>{{ outcome }}</td>
+    </tr>
+  </table>
   <br>
 
-  <li>Analyze through ITRI system:</li>
-  <blockquote>
-    <table border="1">
+  <h4>Result: {{ result }}</h4>
+  <table class="table table-bordered table-hover">
+    {% if grade %}
       <tr>
-        <td style="width:250px">Group-by</td>
-        <td style="width:600px">{{ group }}-score</td>
+        <th width="30%" scope="row" style="background-color:#e2f4f9" colspan="2">LVA Grade</td>
+        <td>{{ grade }}</td>
+      </tr>
+    {% endif %}
+    {% if majorFrac and hipFrac%}
+      <tr>
+        <th scope="row" style="background-color:#e2f4f9" rowspan="2">Frax</td>
+          <th scope="row" style="background-color:#e2f4f9">Major Osteoporotic Fracture</th>
+        <td>{{ majorFrac }}</td>
       </tr>
       <tr>
-        <td style="width:250px">Mean</td>
-        <td style="width:600px">{{ mean }}</td>
+        <th scope="row" style="background-color:#e2f4f9">Hip Fracture</th>
+        <td>{{ hipFrac }}</td>
       </tr>
-      <tr>
-        <td rowspan="2">Aver. Deviation</td>
-        <td>{{ dist1 }}</td>
-      </tr>
-      <tr>
-        <td>{{ dist2 }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">Region Filter</td>
-        <td style="width:600px">{{ regionFilter }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">SR</td>
-        <td style="width:600px">{{ machineOutcome }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">SRi</td>
-        <td style="width:600px">{{ outcome }}</td>
-      </tr>
-    </table>
-  </blockquote>
+    {% endif %}
+  </table>
+
+  <br>
+  <form action="/uploads/report/" method="post" class="text-center">
+    {% csrf_token %}
+    <!-- <input type="submit" value="download report"> -->
+    <button type="submit" class="btn btn-primary">Download Report</button>
+  </form>
   <br>
 
-  <li>Result: {{ result }}</li>
-  <blockquote>
-    <form action="/uploads/report/" method="post">
-      {% csrf_token %}
-      <input type="submit" value="download report">
-    </form>
-    <table border="1">
-      {% if grade %}
-        <tr>
-          <td style="width:250px" colspan="2">LVA Grade</td>
-          <td style="width:600px">{{ grade }}</td>
-        </tr>
-      {% endif %}
-      {% if majorFrac and hipFrac%}
-        <tr>
-          <td rowspan="2">Frax</td>
-          <td>Major Osteoporotic Fracture</td>
-          <td style="width:600px">{{ majorFrac }}</td>
-        </tr>
-        <tr>
-          <td>Hip Fracture</td>
-          <td style="width:600px">{{ hipFrac }}</td>
-        </tr>
-      {% endif %}
-    </table>
-  </blockquote>
-
-  <p><a href="{% url 'manage_zip' %}">manage uploaded ZIP files</a></p>
-  <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}
