@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from .models import PATIENT, FRAX, LVA, APSPINE, DUALFEMUR, COMBINATION
 
 from uploads.core.models import Document
-#from uploads.core.forms import DocumentForm
+from uploads.core.forms import nameForm
 
 from os import listdir
 from os.path import isfile, join
@@ -123,7 +123,7 @@ def str_data(dataset): #write into DB
                 for substring in keyword:
                     substring = substring.split('</')[0].split('>')[1]
                     lva.append(substring)
-                while 'None' in lva:
+                while 'None' in lva:    #TODO: file 163 error
                     lva.remove(substring)
                 response['lva'] = lva
                 # save to DB
@@ -671,7 +671,7 @@ def check_apspine(request):
     zscore = comments['zscore']
 
     data = patient_data(apspineFilePath, zipFolder)
-    # response.update(data)
+    response.update(data)
     
     # decide group
     age = int(data['age'])

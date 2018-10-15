@@ -5,9 +5,17 @@
 {% block content %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" name="myfile">
-    <button type="submit">Upload</button>
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <input type="file" name="myfile" class="custom-file-input" id="inputGroupFile02" onchange="$('#upload-file-info').html(this.files[0].name)">
+        <label class="custom-file-label" id="upload-file-info" for="inputGroupFile02">Choose file</label>
+      </div>
+      <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">Upload</button>
+      </div>
+    </div>
   </form>
+  
 
   {% if warning %}
     <li>{{ warning }} already exists!!</li>
@@ -15,111 +23,103 @@
 
   {% if uploaded_file_url %}
     <p>File uploaded at: {{ uploaded_file_url }}</p>
-
-    <li>Patient's Basic Data</li>
-    <blockquote>
-      <table border="1">
-        <tr>
-          <td  style="width:250px">Patient ID</td>
-          <td  style="width:600px">{{ pid }}</td>
-        </tr>
-        <tr>
-          <td  style="width:250px">Patient Name</td>
-          <td  style="width:600px">{{ name }}</td>
-        </tr>
-        <tr>
-          <td  style="width:250px">Sex</td>
-          <td  style="width:600px">{{ sex }}</td>
-        </tr>
-        <tr>
-          <td  style="width:250px">Age</td>
-          <td  style="width:600px">{{ age }}</td>
-        </tr>
-        <tr>
-          <td  style="width:250px">MP age</td>
-          <td  style="width:600px">{{ mp }}</td>
-        </tr>
-      </table>
-    </blockquote>
+    <h4>Patient's Basic Data</h4>
+    <table class="table table-bordered table-hover">
+      <tr>
+        <th width="30%" scope="row" style="background-color:#e2f4f9" scope="row">Patient ID</td>
+        <td>{{ pid }}</td>
+      </tr>
+      <tr>
+        <th scope="row" style="background-color:#e2f4f9">Patient Name</th>
+        <td>{{ name }}</td>
+      </tr>
+      <tr>
+        <th scope="row" style="background-color:#e2f4f9">Sex</th>
+        <td>{{ sex }}</td>
+      </tr>
+      <tr>
+        <th scope="row" style="background-color:#e2f4f9">Age</th>
+        <td>{{ age }}</td>
+      </tr>
+      <tr>
+        <th scope="row" style="background-color:#e2f4f9">MP age</th>
+        <td>{{ mp }}</td>
+      </tr>
+    </table>
     <br>
 
-    <li>Data grab from ITRI system:</li>
-    <blockquote>
-      <table border="1">
-        {% if scanType %}
-          <tr>
-            <td style="width:250px">Scan Type</td>
-            <td style="width:600px">{{ scanType }}</td>
-          </tr>
-        {% endif %}
-        {% if region %}
-          <tr>
-            <td style="width:250px">Region</td>
-            <td style="width:600px">{{ region }}</td>
-          </tr>
-        {% endif %}
-        {% if tscore %}
-          <tr>
-            <td style="width:250px">T-score</td>
-            <td style="width:600px">{{ tscore }}</td>
-          </tr>
-        {% endif %}
-        {% if zscore %}
-          <tr>
-            <td style="width:250px">Z-score</td>
-            <td style="width:600px">{{ zscore }}</td>
-          </tr>
-        {% endif %}
-        {% if APSpine %}
-          <tr>
-            <td style="width:250px">APSpine</td>
-            <td style="width:600px">{{ APSpine }}</td>
-          </tr>
-        {% endif %}
-        {% if DualFemur %}
-          <tr>
-            <td style="width:250px">DualFemur</td>
-            <td style="width:600px">{{ DualFemur }}</td>
-          </tr>
-        {% endif %}
-        {% if fracture %}
-          <tr>
-            <td style="width:250px">Fracture</td>
-            <td style="width:600px">{{ fracture }}</td>
-          </tr>
-        {% endif %}
-        {% if combination and T7 %}
-          <tr>
-            <td style="width:250px">(Region, T-score, Z-score)</td>
-            <td style="width:600px">{{ combination }}</td>
-          </tr>
-          <tr>
-            <td style="width:250px">T7</td>
-            <td style="width:600px">{{ T7 }}</td>
-          </tr>
-        {% endif %}
-        {% if lva %}
-          <tr>
-            <td style="width:250px">LVA</td>
-            <td style="width:600px">{{ lva }}</td>
-          </tr>
-        {% endif %}
-      </table>
-    </blockquote>
-    <br>
+    {% if scanType %}
+    <h4>Data grab from ITRI system:</h4>
+    <table class="table table-bordered table-hover">
+      <tr>
+        <th width="30%" scope="row" style="background-color:#e2f4f9">Scan Type</th>
+        <td style="width:600px">{{ scanType }}</td>
+      </tr>
+      {% if region %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">Region</th>
+          <td style="width:600px">{{ region }}</td>
+        </tr>
+      {% endif %}
+      {% if tscore %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">T-score</th>
+          <td style="width:600px">{{ tscore }}</td>
+        </tr>
+      {% endif %}
+      {% if zscore %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">Z-score</th>
+          <td style="width:600px">{{ zscore }}</td>
+        </tr>
+      {% endif %}
+      {% if APSpine %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">APSpine</th>
+          <td style="width:600px">{{ APSpine }}</td>
+        </tr>
+      {% endif %}
+      {% if DualFemur %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">DualFemur</th>
+          <td style="width:600px">{{ DualFemur }}</td>
+        </tr>
+      {% endif %}
+      {% if fracture %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">Fracture</th>
+          <td style="width:600px">{{ fracture }}</td>
+        </tr>
+      {% endif %}
+      {% if combination and T7 %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">(Region, T-score, Z-score)</th>
+          <td style="width:600px">{{ combination }}</td>
+        </tr>
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">T7</th>
+          <td style="width:600px">{{ T7 }}</td>
+        </tr>
+      {% endif %}
+      {% if lva %}
+        <tr>
+          <th width="30%" scope="row" style="background-color:#e2f4f9">LVA</th>
+          <td style="width:600px">{{ lva }}</td>
+        </tr>
+      {% endif %}
+    </table>
+    {% endif %}
     
-    <blockquote>
     {% if report %}
-      report: {{ report }}<br>
+      <h4>Report:</h4>
+      {{ report }}<br>
       <img src="{{ report }}" alt="My image">
     {% endif %}
-    </blockquote>
 
     <br>
-    <li>dataset:</li>
+    <br>
+    <h4>Dataset:</h4>
     <pre>{{ dataset }}</pre>
     
   {% endif %}
-
-  <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}

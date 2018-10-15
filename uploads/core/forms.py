@@ -12,10 +12,10 @@ class DocumentForm(forms.ModelForm):
 class nameForm(forms.Form):
     rename=forms.CharField()
 
-class FileForm(forms.ModelForm):
-    class Meta:
-        model = File
-        fields = ('filename',)
+# class FileForm(forms.ModelForm):
+#     class Meta:
+#         model = File
+#         fields = ('filename',)
     # file = forms.FileField()
     # pid = forms.CharField(max_length=20)
     # name = forms.CharField(max_length=20)

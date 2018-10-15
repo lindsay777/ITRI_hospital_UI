@@ -4,109 +4,106 @@
 
 {% block content %}
 
-<li>Patient's Basic Data</li>
-<blockquote>
-  <table border="1">
+<h4>Patient's Basic Data</h4>
+<br>
+  <table class="table table-bordered table-hover">
     <tr>
-      <td style="width:250px">Patient ID</td>
-      <td style="width:600px">{{ pid }}</td>
+      <th width="30%" scope="row" style="background-color:#e2f4f9" scope="row">Patient ID</td>
+      <td>{{ pid }}</td>
     </tr>
     <tr>
-      <td style="width:250px">Patient Name</td>
-      <td style="width:600px">{{ name }}</td>
+      <th scope="row" style="background-color:#e2f4f9">Patient Name</th>
+      <td>{{ name }}</td>
     </tr>
     <tr>
-      <td style="width:250px">Sex</td>
-      <td style="width:600px">{{ sex }}</td>
+      <th scope="row" style="background-color:#e2f4f9">Sex</th>
+      <td>{{ sex }}</td>
     </tr>
     <tr>
-      <td style="width:250px">Age</td>
-      <td style="width:600px">{{ age }}</td>
+      <th scope="row" style="background-color:#e2f4f9">Age</th>
+      <td>{{ age }}</td>
     </tr>
     <tr>
-      <td style="width:250px">MP age</td>
-      <td style="width:600px">{{ mp }}</td>
+      <th scope="row" style="background-color:#e2f4f9">MP age</th>
+      <td>{{ mp }}</td>
     </tr>
   </table>
-</blockquote>
-<br>
+  <br>
 
 {% if scanType %}
-<li>Data grab from ITRI system:</li>
-<blockquote>
-  <table border="1">
+<h4>Data grab from ITRI system:</h4>
+<table class="table table-bordered table-hover">
+  <tr>
+    <th scope="row" style="background-color:#e2f4f9">Scan Type</th>
+    <td>{{ scanType }}</td>
+  </tr>
+  {% if region %}
     <tr>
-      <td style="width:250px">Scan Type</td>
-      <td style="width:600px">{{ scanType }}</td>
+      <th width="30%" scope="row" style="background-color:#e2f4f9">Region</th>
+      <td>{{ region }}</td>
     </tr>
-    {% if region %}
-      <tr>
-        <td style="width:250px">Region</td>
-        <td style="width:600px">{{ region }}</td>
-      </tr>
-    {% endif %}
-    {% if tscore %}
-      <tr>
-        <td style="width:250px">T-score</td>
-        <td style="width:600px">{{ tscore }}</td>
-      </tr>
-    {% endif %}
-    {% if zscore %}
-      <tr>
-        <td style="width:250px">Z-score</td>
-        <td style="width:600px">{{ zscore }}</td>
-      </tr>
-    {% endif %}
-    {% if APSpine %}
-      <tr>
-        <td style="width:250px">APSpine</td>
-        <td style="width:600px">{{ APSpine }}</td>
-      </tr>
-    {% endif %}
-    {% if DualFemur %}
-      <tr>
-        <td style="width:250px">DualFemur</td>
-        <td style="width:600px">{{ DualFemur }}</td>
-      </tr>
-    {% endif %}
-    {% if fracture %}
-      <tr>
-        <td style="width:250px">Fracture</td>
-        <td style="width:600px">{{ fracture }}</td>
-      </tr>
-    {% endif %}
-    {% if combination and T7 %}
-      <tr>
-        <td style="width:250px">(Region, T-score, Z-score)</td>
-        <td style="width:600px">{{ combination }}</td>
-      </tr>
-      <tr>
-        <td style="width:250px">T7</td>
-        <td style="width:600px">{{ T7 }}</td>
-      </tr>
-    {% endif %}
-    {% if lva %}
-      <tr>
-        <td style="width:250px">LVA</td>
-        <td style="width:600px">{{ lva }}</td>
-      </tr>
-    {% endif %}
-  </table>
+  {% endif %}
+  {% if tscore %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">T-score</th>
+      <td>{{ tscore }}</td>
+    </tr>
+  {% endif %}
+  {% if zscore %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Z-score</th>
+      <td>{{ zscore }}</td>
+    </tr>
+  {% endif %}
+  {% if APSpine %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">APSpine</th>
+      <td>{{ APSpine }}</td>
+    </tr>
+  {% endif %}
+  {% if DualFemur %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">DualFemur</th>
+      <td>{{ DualFemur }}</td>
+    </tr>
+  {% endif %}
+  {% if fracture %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">Fracture</th>
+      <td>{{ fracture }}</td>
+    </tr>
+  {% endif %}
+  {% if combination and T7 %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">(Region, T-score, Z-score)</th>
+      <td>{{ combination }}</td>
+    </tr>
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">T7</th>
+      <td>{{ T7 }}</td>
+    </tr>
+  {% endif %}
+  {% if lva %}
+    <tr>
+      <th scope="row" style="background-color:#e2f4f9">LVA</th>
+      <td>{{ lva }}</td>
+    </tr>
+  {% endif %}
+</table>
 </blockquote>
 <br>
 {% endif %}
 
-<li>Image Report:</li>
-<blockquote>
 {% if report %}
+<h4>Image Report:</h4>
+<blockquote>
   report: {{ report }}<br>
   <img src="{{ report }}" alt="My image">
-{% endif %}
 </blockquote>
+{% endif %}
 
 <br>
-<li>dataset:</li>
+<h4>Dataset:</h4>
 <pre>{{ dataset }}</pre>
 
-<p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}
