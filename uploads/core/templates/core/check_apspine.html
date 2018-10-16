@@ -1,109 +1,135 @@
 {% extends 'base.html' %}
 
 {% load static %}
-
+<!-- TODO: 864 error -->
 {% block content %}
-  <h4>Patient's Basic Data</h4>
+  {% if result_correct %}
+    <div class="row">
+      <div class="col-10">
+        <h3>Result: <span class="badge badge-success">{{ result_correct }}</span></h3>
+      </div>
+      <div class="col-1">
+        <form action="/uploads/report/" method="post" class="text-right">
+          {% csrf_token %}
+          <!-- <input type="submit" value="download report"> -->
+          <button type="submit" class="btn btn-primary">Download Report</button>
+        </form>
+      </div>
+    </div>
+    <br>
+
+    <table class="table table-bordered table-hover">
+      <tr>
+        <th colspan="3" scope="row" style="background-color:#e2f4f9" class="text-center"><h5>ADVANCED DATA RETRIEVAL</h5></th>
+      </tr>
+      <!-- {% if grade %} -->
+        <tr>
+          <td width="30%" style="background-color:#e2f4f9" colspan="2">LVA Grade</td>
+          <td>{{ grade }}</td>
+        </tr>
+      <!-- {% endif %}
+      {% if majorFrac and hipFrac%} -->
+        <tr>
+          <td style="background-color:#e2f4f9" rowspan="2" class="align-middle" width="5%">Frax</td>
+          <td style="background-color:#e2f4f9" width="17%">Major Osteoporotic Fracture</td>
+          <td>{{ majorFrac }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e2f4f9">Hip Fracture</td>
+          <td>{{ hipFrac }}</td>
+        </tr>
+      <!-- {% endif %} -->
+    </table>
+  {% endif %}
+  {% if result_warn %}
+    <div class="row">
+      <div class="col-10">
+        <h3>Result: <span class="badge badge-danger">{{ result_warn }}</span></h3>
+      </div>
+      <div class="col-1">
+        <form action="/uploads/report/" method="post" class="text-right">
+          {% csrf_token %}
+          <!-- <input type="submit" value="download report"> -->
+          <button type="submit" class="btn btn-primary">Download Report</button>
+        </form>
+      </div>
+    </div>
+    <br>
+  {% endif %}
   <table class="table table-bordered table-hover">
     <tr>
-      <th width="30%" scope="row" style="background-color:#e2f4f9" scope="row">Patient ID</td>
+      <th colspan="3" scope="row" style="background-color:#f5efff" class="text-center"><h5>BASIC DATA</h5></th>
+    </tr>
+    <tr>
+      <td width="22%" style="background-color:#f5efff">Patient ID</td>
       <td>{{ pid }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Patient Name</th>
+      <td scope="row" style="background-color:#f5efff">Patient Name</td>
       <td>{{ name }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Sex</th>
+      <td scope="row" style="background-color:#f5efff">Sex</td>
       <td>{{ sex }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Age</th>
+      <td scope="row" style="background-color:#f5efff">Age</td>
       <td>{{ age }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">MP age</th>
+      <td scope="row" style="background-color:#f5efff">MP age</td>
       <td>{{ mp }}</td>
     </tr>
   </table>
-  <br>
-
-  <h4>Data grab from ITRI system:</h4>
   <table class="table table-bordered table-hover">
     <tr>
-      <th width="30%" scope="row" style="background-color:#e2f4f9">Region</th>
+      <th colspan="3" scope="row" style="background-color:#fdf3f8" class="text-center"><h5>DATA GRAB FROM ITRI SYSTEM</h5></th>
+    </tr>
+    <tr>
+      <td width="22%" scope="row" style="background-color:#fdf3f8">Region</td>
       <td>{{ region }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">T-score</th>
+      <td scope="row" style="background-color:#fdf3f8">T-score</td>
       <td>{{ tscore }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Z-score</th>
+      <td scope="row" style="background-color:#fdf3f8">Z-score</td>
       <td>{{ zscore }}</td>
     </tr>
   </table>
-  <br>
-
-  <h4>Analyze through ITRI system:</h4>
   <table class="table table-bordered table-hover">
     <tr>
-      <th width="30%" scope="row" style="background-color:#e2f4f9">Group-by</th>
+      <th colspan="3" scope="row" style="background-color:#f3fdf3" class="text-center"><H5>ANALYZE THROUGH ITRI SYSTEM</H5></th>
+    </tr>
+    <tr>
+      <td width="22%" scope="row" style="background-color:#f3fdf3">Group-by</td>
       <td>{{ group }}-score</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Mean</th>
+      <td scope="row" style="background-color:#f3fdf3">Mean</td>
       <td>{{ mean }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9" rowspan="2">Aver. Deviation</td>
+      <td scope="row" style="background-color:#f3fdf3" rowspan="2" class="align-middle">Aver. Deviation</td>
       <td>{{ dist1 }}</td>
     </tr>
     <tr>
       <td>{{ dist2 }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">Region Filter</th>
+      <td scope="row" style="background-color:#f3fdf3">Region Filter</td>
       <td>{{ regionFilter }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">SR</th>
+      <td scope="row" style="background-color:#f3fdf3">SR</td>
       <td>{{ machineOutcome }}</td>
     </tr>
     <tr>
-      <th scope="row" style="background-color:#e2f4f9">SRi</th>
+      <td scope="row" style="background-color:#f3fdf3">SRi</td>
       <td>{{ outcome }}</td>
     </tr>
   </table>
-  <br>
-
-  <h4>Result: {{ result }}</h4>
-  <table class="table table-bordered table-hover">
-    {% if grade %}
-      <tr>
-        <th width="30%" scope="row" style="background-color:#e2f4f9" colspan="2">LVA Grade</td>
-        <td>{{ grade }}</td>
-      </tr>
-    {% endif %}
-    {% if majorFrac and hipFrac%}
-      <tr>
-        <th scope="row" style="background-color:#e2f4f9" rowspan="2">Frax</td>
-          <th scope="row" style="background-color:#e2f4f9">Major Osteoporotic Fracture</th>
-        <td>{{ majorFrac }}</td>
-      </tr>
-      <tr>
-        <th scope="row" style="background-color:#e2f4f9">Hip Fracture</th>
-        <td>{{ hipFrac }}</td>
-      </tr>
-    {% endif %}
-  </table>
-
-  <br>
-  <form action="/uploads/report/" method="post" class="text-center">
-    {% csrf_token %}
-    <!-- <input type="submit" value="download report"> -->
-    <button type="submit" class="btn btn-primary">Download Report</button>
-  </form>
   <br>
 
 {% endblock %}

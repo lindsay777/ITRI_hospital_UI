@@ -36,6 +36,7 @@ from reportlab.pdfgen import canvas
 
 #TODO: TBS
 #TODO: MANAGE_ZIP: multi file process
+#TODO: use pid to save file instad of filename
 #check if getting data is not from filename
 #template 
 
@@ -104,12 +105,12 @@ def str_data(dataset): #write into DB
     # at least one scanType:
     else:
         comments = t_z_r(comment)
+        response['tscore'] = comments['str_tscore']
+        response['zscore'] = comments['str_zscore']
+        response['region'] = comments['str_region']
         tscore = comments['tscore']
         zscore = comments['zscore']
         region = comments['region']
-        response['tscore'] = tscore
-        response['zscore'] = zscore
-        response['region'] = region
         
         # classify through scanType
         if length == 1:
@@ -131,7 +132,12 @@ def str_data(dataset): #write into DB
                 fileInstance.save()
             # AP Spine
             elif scanType == 'AP Spine':
-                APSpine = list(zip(region, tscore, zscore))
+                APSpine = ''
+                for i in range(len(tscore)):
+                    if APSpine == '':
+                        APSpine += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                    else:
+                        APSpine += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
                 response['APSpine'] = APSpine
                 # save to DB
                 fileInstance = APSPINE(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
@@ -139,7 +145,12 @@ def str_data(dataset): #write into DB
 
             # Dual Femur
             elif scanType == 'DualFemur':
-                DualFemur = list(zip(region, tscore, zscore))
+                DualFemur = ''
+                for i in range(len(tscore)):
+                    if DualFemur == '':
+                        DualFemur += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                    else:
+                        DualFemur += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
                 response['DualFemur'] = DualFemur
                 # save to DB
                 fileInstance = DUALFEMUR(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
@@ -153,7 +164,12 @@ def str_data(dataset): #write into DB
             response['scanType'] = scanType
             
             del region[1:4]
-            combination = list(zip(region, tscore, zscore))
+            combination = ''
+            for i in range(len(tscore)):
+                if combination == '':
+                    combination += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    combination += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
             response['combination'] = combination
             # get LVA
             keyword = []
@@ -166,10 +182,20 @@ def str_data(dataset): #write into DB
                 lva.remove(substring)
             response['lva'] = lva
             # get APSpine
-            APSpine = list(zip(region, tscore, zscore))
+            APSpine = ''
+            for i in range(len(tscore)):
+                if APSpine == '':
+                    APSpine += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    APSpine += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
             response['APSpine'] = APSpine
             # get DualFemur
-            DualFemur = list(zip(region, tscore, zscore))
+            DualFemur = ''
+            for i in range(len(tscore)):
+                if DualFemur == '':
+                    DualFemur += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    DualFemur += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
             response['DualFemur'] = DualFemur
             # get T7
             T7 = [s for s in comment if "DEFORMITY" in s]
@@ -420,7 +446,7 @@ def upload_multi_zip(request): #批次處理 未做
 
 def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
     response = {}
-    zipFolder = request.session['myZipFile']
+    zipFolder = request.session['myfile']
     zipFolder = list(zipFolder)[:-4] # remove '.zip'
     zipFolder = ''.join(zipFolder)
 
@@ -705,12 +731,15 @@ def check_apspine(request):
     machineMerge = merge[4:]
 
     machineOutcome = ''
+    list_machineOutcome =[]
     for substring in machineMerge:
         if machineOutcome == '':
             machineOutcome = str(substring[0])
         else:
             machineOutcome = machineOutcome + ', ' + str(substring[0])
+        list_machineOutcome.append(substring[0])
     response['machineOutcome'] = machineOutcome
+    print(list_machineOutcome)
 
     merge = merge[:4]
 
@@ -760,11 +789,15 @@ def check_apspine(request):
         outcome = str(start + '-' + end)
     else:
         outcome = str(start + '-' + end + '(' + diffRegion + ')')
+    list_outcome = ''.join(list(outcome))
     response['outcome'] = outcome
     
+    print('='*50)
+    print(list_outcome)
+    print(list_machineOutcome)
     # check the result to determine re-gen or not
-    if outcome in machineOutcome:
-        response['result'] = 'Correct, go to the next step.'
+    if list_outcome in list_machineOutcome:
+        response['result_correct'] = 'Correct'
         # Obtain LVA
         lvaFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_lva
         # read file
@@ -827,7 +860,8 @@ def check_apspine(request):
 
     else:
         #request.session['reportVar'] = response
-        response['result'] = 'Warn!! Please Re-gen.'
+        response['result_warn'] = 'Warn!! Please Re-gen.'
+        #TODO:
 
     return render(request, 'core/check_apspine.html', response)
 
