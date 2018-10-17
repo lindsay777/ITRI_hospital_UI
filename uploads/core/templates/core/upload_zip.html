@@ -5,8 +5,15 @@
 {% block content %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" name="myfile">
-    <button type="submit" class="btn btn-primary">Upload</button>
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <input type="file" name="myfile" class="custom-file-input" id="inputGroupFile02" onchange="$('#upload-file-info').html(this.files[0].name)">
+        <label class="custom-file-label" id="upload-file-info" for="inputGroupFile02">Choose file</label>
+      </div>
+      <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">Upload</button>
+      </div>
+    </div>
   </form>
 
   {% if warning %}
@@ -14,10 +21,9 @@
   {% endif %}
 
   {% if uploaded_file_url %}
-    <p>File uploaded at: {{ uploaded_file_url }}</p>
-
-    <li>zipFileName: {{ myZipFile }}</li>
-    <li>zipFilePath: {{ zipFilePath }}</li>
+    <p>File uploaded success!</p>
+    <p>New file name: {{ pid }}.zip</p>
+    <p>Original file name: {{ myZipFile }}</p>
     <li>dir_tree:</li>
 
     <blockquote>

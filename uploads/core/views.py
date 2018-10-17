@@ -31,14 +31,12 @@ from reportlab.pdfgen import canvas
 # fileName: no .dcm
 
 # session:
-# upload_zip: myZipFile
+# upload_zip: myZipFile, pid
 # show_dcm/ manage_show_zip: myfile
 
 #TODO: TBS
 #TODO: MANAGE_ZIP: multi file process
-#TODO: use pid to save file instad of filename
 #check if getting data is not from filename
-#template 
 
 def home(request):
     documents = Document.objects.all()
@@ -305,7 +303,6 @@ def upload_zip(request):
         # get folder name of the extracted zip file
         zipFolder = list(myZipFile)[:-4] #remove '.zip'
         zipFolder = ''.join(zipFolder)
-        zipFilePath = 'media/ZIP/' + zipFolder
         
         # get file list in the folder
         onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
@@ -329,6 +326,7 @@ def upload_zip(request):
                 zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
                 if ".dcm" in file.lower():
                     DCMFiles.append(file)
+            zip_file.close()
 
             # read each file and save to DB
             for file in DCMFiles:
@@ -337,7 +335,7 @@ def upload_zip(request):
                 dataset = pydicom.dcmread(dcmFilePath)
                 # ----- get image report from IMG file -----  
                 try:
-                    dataset.pixel_array
+                    dataset.pixel_array #TODO: file 163 error
                     if cv2.imwrite('media/ZIP/JPG/' + file + '_report.jpg', dataset.pixel_array):
                         # must add a '/' ahead
                         response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
@@ -346,18 +344,21 @@ def upload_zip(request):
                 except:   
                     response.update(str_data(dataset))
             response.update(patient_data(dcmFilePath, file))
+            request.session['pid'] = response['pid']
+            #change file name to pid
+            os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
+            os.rename('media/ZIP/' + zipFolder, 'media/ZIP/' + response['pid'])
+            zipFolder = 'media/ZIP/' + response['pid']
+        
+            response['myZipFile'] = myZipFile
 
-            response={
-                'myZipFile': myZipFile,
-                'zipFilePath': zipFilePath,
-            }
             # ================directory tree================
             # directory tree
             dir_tree = []
             # contain '.dcm' files 
             file_tree = []
             # traverse root directory, and list directories as dirs and files as files
-            for root, dirs, files in os.walk(zipFilePath):
+            for root, dirs, files in os.walk(zipFolder):
                 path = root.split(os.sep)
                 line = ((len(path) - 1) * '---', os.path.basename(root))
                 line = ''.join(line)
@@ -447,8 +448,7 @@ def upload_multi_zip(request): #批次處理 未做
 def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
     response = {}
     zipFolder = request.session['myfile']
-    zipFolder = list(zipFolder)[:-4] # remove '.zip'
-    zipFolder = ''.join(zipFolder)
+    pid = request.session['pid']
 
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
@@ -456,9 +456,9 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
     fileName = ''.join(fileName)
 
     if myfile.startswith('STR'):
-        filePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + myfile
+        filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
     elif myfile.startswith('IMG'):
-        filePath = 'media/ZIP/' + zipFolder + '/SDY00000/SRS00000/' + myfile
+        filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
 
     # read file
     data = patient_data(filePath, myfile)

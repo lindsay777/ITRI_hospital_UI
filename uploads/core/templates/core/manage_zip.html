@@ -6,17 +6,14 @@
 
   <form action="/uploads/manageZIP/" method="post">
     {% csrf_token %}
-    <input type="submit" value="delete">
+    <button type="submit" class="btn btn-outline-primary mb-3">Delete</button>
+    <br>
 
     {% for file in onlyfiles %}
-      <li>
-        <input type='checkbox' name='selected' value={{file}}>
-        <label><a href="{% url 'manage_show_zip' %}?file={{file}}">{{ file }}</a></label>
-      </li>
+      <input class="ml-3" type='checkbox' name='selected' value={{file}}>
+      <label><a href="{% url 'manage_show_zip' %}?file={{file}}">{{ file }}</a></label>
+      <label class="ml-3">我是上傳時間</label>
     {% endfor %}
-
   </form>
-
-  <p><a href="{% url 'home' %}">Return to home</a></p>
 
 {% endblock %}
