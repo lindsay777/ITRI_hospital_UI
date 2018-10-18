@@ -337,7 +337,7 @@ def upload_zip(request):
                 dataset = pydicom.dcmread(dcmFilePath)
                 # ----- get image report from IMG file -----  
                 try:
-                    dataset.pixel_array #TODO: file 163 error
+                    dataset.pixel_array
                     if cv2.imwrite('media/ZIP/JPG/' + file + '_report.jpg', dataset.pixel_array):
                         # must add a '/' ahead
                         response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
