@@ -122,9 +122,8 @@ def str_data(dataset): #write into DB
                 lva=[]
                 for substring in keyword:
                     substring = substring.split('</')[0].split('>')[1]
-                    lva.append(substring)
-                while 'None' in lva:    #TODO: file 163 error
-                    lva.remove(substring)
+                    if substring != 'None':
+                        lva.append(substring)
                 response['lva'] = lva
                 # save to DB
                 fileInstance = LVA(pid=pid, scantype=scanType, lva=lva)
@@ -294,6 +293,7 @@ def upload_dcm(request):
         return render(request, 'core/upload_dcm.html')
         
 def upload_zip(request):
+    #TODO: upload same file error
     if request.method == 'POST' and request.FILES['myfile']:
         response = {}
 

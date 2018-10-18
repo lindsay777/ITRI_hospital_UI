@@ -8,12 +8,16 @@
     <button type="submit" class="btn btn-outline-primary mb-3">Delete</button>
     <br>
 
-    {% for file in onlyfiles %}
-      <input class="ml-3" type='checkbox' name='selected' value={{file}}>
-      <label><a href="{% url 'show_dcm' %}?file={{file}}">{{ file }}</a></label>
-      <label class="ml-3">我是上傳時間</label>
-      <br>
-    {% endfor %}
+    <ul class="list-group list-group-flush align-center">
+      {% for file in onlyfiles %}
+      <li class="list-group-item">
+        <input class="ml-3" type='checkbox' name='selected' value={{file}}>
+        <label><a href="{% url 'show_dcm' %}?file={{file}}">{{ file }}</a></label>
+        <span class="badge badge-primary badge-pill ml-3">我是上傳時間</span>
+      </li>
+      {% endfor %}
+    </ul>
+
   </form>
 
 {% endblock %}
