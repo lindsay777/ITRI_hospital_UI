@@ -12,6 +12,7 @@
       <input class="ml-3" type='checkbox' name='selected' value={{file}}>
       <label><a href="{% url 'show_dcm' %}?file={{file}}">{{ file }}</a></label>
       <label class="ml-3">我是上傳時間</label>
+      <br>
     {% endfor %}
   </form>
 

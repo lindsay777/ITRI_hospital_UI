@@ -18,6 +18,7 @@ import cv2
 import os
 import shutil
 import re
+import datetime
 from pydicom.data import get_testdata_files
 
 import io
@@ -243,14 +244,15 @@ def read_dcm(dcmFilePath):
 
 def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
+        response = {}
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         myfile = fs.save(myfile.name, myfile)
         fileName = list(myfile)[:-4] # remove '.dcm'
         fileName = ''.join(fileName)
+        response['dateTime'] = str(datetime.datetime.now().split('.')[0])
+        request.session['dateTime'] = response['dateTime']
 
-        response = {}
-    
         # get file list in the folder
         onlyfiles = [f for f in listdir('media/DCM/') if isfile(join('media/DCM/', f))]
         # if the file name already exists, show warning
