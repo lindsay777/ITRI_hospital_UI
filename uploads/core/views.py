@@ -851,7 +851,7 @@ def check_apspine(request):
         response['hipFrac'] = hipFrac
 
         #TODO: Object of type 'bytes' is not JSON serializable
-        #request.session['reportVar'] = response
+        #request.session['reportVar'] = response['group']
         # for key in list(response.keys()):
         #     request.session[key] = response[key]
             # print(key)
@@ -861,7 +861,7 @@ def check_apspine(request):
         return render(request, 'core/check_apspine.html', response)
 
     else:
-        #request.session['reportVar'] = response
+        #request.session['reportVar'] = response['group']
         response['result_warn'] = 'Warn!! Please Re-gen.'
         #TODO:
 
@@ -869,6 +869,7 @@ def check_apspine(request):
 
 def report(request):
     reportVar = request.session['reportVar']
+    print(reportVar)
     reportText = "Average bone mineral density(BMD) of L1 to L4 is " + reportVar['group'] + "gm/cm2, "
     # Create the HttpResponse object with the appropriate PDF headers.
     response = HttpResponse(content_type='application/pdf')
