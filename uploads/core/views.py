@@ -18,7 +18,7 @@ import cv2
 import os
 import shutil
 import re
-import datetime
+from datetime import datetime
 from pydicom.data import get_testdata_files
 
 import io
@@ -43,15 +43,15 @@ def home(request):
     documents = Document.objects.all()
     return render(request, 'core/home.html', { 'documents': documents })
 
-def patient_data(filepath, filename): # write into DB
+def patient_data(filepath, filename, saveType): # write into DB
     # read file
-    dataset = pydicom.dcmread(filepath) 
+    dataset = pydicom.dcmread(filepath)
 
-    # get patient's ID
+    # add upload time
+    datetime_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     pid = dataset.PatientID
-    # get name
     name = str(dataset.PatientName)
-    # get sex
     sex = dataset.PatientSex
     # get age (ex. 063Y->63)
     age_list = list(dataset.PatientAge)
@@ -75,13 +75,17 @@ def patient_data(filepath, filename): # write into DB
         'age': age,
         'mp': mp,
         'dataset': dataset,
+        'datetime': datetime_str,
     }
-    # save to DB
-    fileInstance = PATIENT(pid=pid, filename=filename, name=name, sex=sex, age=age, mp=mp)
-    fileInstance.save()
+    if saveType == 'zip':
+        # save to DB
+        fileInstance = PATIENT(pid=pid, filename=filename, pub_date=datetime_str, name=name, sex=sex, age=age, mp=mp)
+        fileInstance.save()
+    else:
+        print('file does not save to DB')
     return response
 
-def str_data(dataset): #write into DB
+def str_data(dataset, saveType): #write into DB
     response = {}
     pid = dataset.PatientID
     comment = dataset.ImageComments
@@ -93,14 +97,22 @@ def str_data(dataset): #write into DB
     # 02 frax: major fracture
     if length == 0:
         response['scanType'] = 'FRAX'
-        keyword = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
-        fracture = ''.join(keyword)
-        fracture = fracture.split('</')[0].split('>')[1]
-        response['fracture'] = fracture
+        majorFrac = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
+        majorFrac = ''.join(majorFrac)
+        majorFrac = majorFrac.split('</')[0].split('>')[1]
+        response['majorFrac'] = majorFrac
+        # get hip frac
+        hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
+        hipFrac = ''.join(hipFrac)
+        hipFrac = hipFrac.split('</')[0].split('>')[1]
+        response['hipFrac'] = hipFrac
 
-        # save to DB
-        fileInstance = FRAX(pid=pid, scantype='FRAX', fracture=fracture)
-        fileInstance.save()
+        if saveType == 'zip':
+            # save to DB
+            fileInstance = FRAX(pid=pid, scantype='FRAX', majorFracture=majorFrac, hipFracture=hipFrac)
+            fileInstance.save()
+        else:
+            print('file does not save to DB')
     # at least one scanType:
     else:
         comments = t_z_r(comment)
@@ -125,9 +137,12 @@ def str_data(dataset): #write into DB
                     if substring != 'None':
                         lva.append(substring)
                 response['lva'] = lva
-                # save to DB
-                fileInstance = LVA(pid=pid, scantype=scanType, lva=lva)
-                fileInstance.save()
+                if saveType == 'zip':
+                    # save to DB
+                    fileInstance = LVA(pid=pid, scantype=scanType, lva=lva)
+                    fileInstance.save()
+                else:
+                    print('file does not save to DB')
             # AP Spine
             elif scanType == 'AP Spine':
                 APSpine = ''
@@ -137,9 +152,12 @@ def str_data(dataset): #write into DB
                     else:
                         APSpine += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
                 response['APSpine'] = APSpine
-                # save to DB
-                fileInstance = APSPINE(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
-                fileInstance.save()
+                if saveType == 'zip':
+                    # save to DB
+                    fileInstance = APSPINE(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, apspine=APSpine)
+                    fileInstance.save()
+                else:
+                    print('file does not save to DB')
 
             # Dual Femur
             elif scanType == 'DualFemur':
@@ -150,9 +168,12 @@ def str_data(dataset): #write into DB
                     else:
                         DualFemur += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
                 response['DualFemur'] = DualFemur
-                # save to DB
-                fileInstance = DUALFEMUR(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
-                fileInstance.save()
+                if saveType == 'zip':
+                    # save to DB
+                    fileInstance = DUALFEMUR(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, dualfemur=DualFemur)
+                    fileInstance.save()
+                else:
+                    print('file does not save to DB')
             else:
                 print('error input')
 
@@ -201,9 +222,12 @@ def str_data(dataset): #write into DB
             T7 = T7.split('</')[0].split('>')[1]
             response['T7'] = T7
 
-            # save to DB
-            fileInstance = COMBINATION(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, lva=lva, apspine=APSpine, dualfemur=DualFemur, combination=combination, t7=T7)
-            fileInstance.save()
+            if saveType == 'zip':
+                # save to DB
+                fileInstance = COMBINATION(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, lva=lva, apspine=APSpine, dualfemur=DualFemur, combination=combination, t7=T7)
+                fileInstance.save()
+            else:
+                print('file does not save to DB')
     return response
 
 def t_z_r(comment):
@@ -249,8 +273,6 @@ def upload_dcm(request):
         myfile = fs.save(myfile.name, myfile)
         fileName = list(myfile)[:-4] # remove '.dcm'
         fileName = ''.join(fileName)
-        response['dateTime'] = str(datetime.datetime.now().split('.')[0])
-        request.session['dateTime'] = response['dateTime']
 
         # get file list in the folder
         onlyfiles = [f for f in listdir('media/DCM/') if isfile(join('media/DCM/', f))]
@@ -267,8 +289,9 @@ def upload_dcm(request):
             shutil.move('media/'+myfile, 'media/DCM/'+myfile)
             dcmFilePath = 'media/DCM/' + myfile
 
-            # patient_data & upload to DB
-            data = patient_data(dcmFilePath, myfile)
+            # patient_data
+            saveType = 'dcm'
+            data = patient_data(dcmFilePath, myfile, saveType)
             dataset = data['dataset']
             response.update(data)
 
@@ -282,8 +305,8 @@ def upload_dcm(request):
 
             # -------- get value from STR file --------
             except:   
-                # str_data & upload to DB
-                response.update(str_data(dataset))
+                # str_data
+                response.update(str_data(dataset, saveType))
 
             uploaded_file_url = fs.url(myfile)
             response['uploaded_file_url'] = uploaded_file_url
@@ -293,7 +316,6 @@ def upload_dcm(request):
         return render(request, 'core/upload_dcm.html')
         
 def upload_zip(request):
-    #TODO: upload same file error
     if request.method == 'POST' and request.FILES['myfile']:
         response = {}
 
@@ -319,6 +341,7 @@ def upload_zip(request):
         
         else: 
             DCMFiles = []
+            saveType = 'zip'
             # move file form media/ to media/zip/ folder
             shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
             # read zip file
@@ -344,8 +367,8 @@ def upload_zip(request):
 
                 # -------- get value from STR file --------
                 except:   
-                    response.update(str_data(dataset))
-            response.update(patient_data(dcmFilePath, file))
+                    response.update(str_data(dataset, saveType))
+            response.update(patient_data(dcmFilePath, file, saveType))
             request.session['pid'] = response['pid']
             #change file name to pid
             os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
@@ -449,6 +472,7 @@ def upload_multi_zip(request): #批次處理 未做
 
 def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
     response = {}
+    saveType = 'zip'
     zipFolder = request.session['myfile']
     pid = request.session['pid']
 
@@ -463,7 +487,7 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
         filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
 
     # read file
-    data = patient_data(filePath, myfile)
+    data = patient_data(filePath, myfile, saveType)
     dataset = data['dataset']
     response.update(data)
 
@@ -477,7 +501,7 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
 
     # -------- get value from STR file --------
     except:
-        response.update(str_data(dataset))
+        response.update(str_data(dataset, saveType))
 
     return render(request, 'core/show_zip.html', response)
 
@@ -863,7 +887,6 @@ def check_apspine(request):
     else:
         #request.session['reportVar'] = response['group']
         response['result_warn'] = 'Warn!! Please Re-gen.'
-        #TODO:
 
     return render(request, 'core/check_apspine.html', response)
 

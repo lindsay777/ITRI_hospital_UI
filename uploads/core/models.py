@@ -10,11 +10,11 @@ class Document(models.Model):
 class PATIENT(models.Model):
     pid = models.CharField(max_length=50, null=True)
     filename = models.CharField(max_length=50,null=True)
-    #pub_date = models.DateTimeField('date published')
-    name = models.CharField(max_length=50)
+    pub_date = models.CharField(max_length=22,null=True)
+    name = models.CharField(max_length=50,null=True)
     sex = models.CharField(max_length=1,null=True)
-    age = models.CharField(max_length=5,null=True)
-    mp = models.CharField(max_length=5,null=True)
+    age = models.CharField(max_length=3,null=True)
+    mp = models.CharField(max_length=3,null=True)
 
     def __unicode__(self):
         return self.pid
@@ -22,7 +22,8 @@ class PATIENT(models.Model):
 class FRAX(models.Model):
     pid = models.CharField(max_length=50, null=True)
     scantype = models.CharField(max_length=15,null=True)
-    fracture = models.CharField(max_length=5,null=True)
+    majorFracture = models.CharField(max_length=5,null=True)
+    hipFracture = models.CharField(max_length=5,null=True)
 
 class LVA(models.Model):
     pid = models.CharField(max_length=50, null=True)
