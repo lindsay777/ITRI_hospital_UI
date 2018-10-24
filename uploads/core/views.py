@@ -592,13 +592,31 @@ def manage_zip(request):
     # return render(request, 'core/manage_zip.html', {
     #     'onlyfiles': onlyfiles,
     # })
-    patients = PATIENT.objects.all()
-    return render(request, 'core/manage_zip.html', {'patients': patients})
 
+    # get patient data from DB
+    patients = PATIENT.objects.all()
+    # select files to remove
+    if request.method == 'POST':
+        selected = request.POST.getlist('selected')
+        result=''
+        response={}
+        for files in selected:
+            fileName = list(files)[:-4] # remove '.zip'
+            fileName = ''.join(fileName)
+            # remove zip file and extract folder
+            os.remove('media/ZIP/' + files) 
+            shutil.rmtree('media/ZIP/' + fileName)
+            
+            result+=fileName + ' '
+            response['result'] = result
+        return render(request, 'core/result.html', response)
+
+    return render(request, 'core/manage_zip.html', {'patients': patients})
 
 def manage_show_zip(request):
     # get the file name user clicked from template
-    myfile = request.GET.get('file', None)
+    myfile = request.GET.get('patient.pid', None)
+    print(myfile)
     request.session['myfile'] = myfile
     zipFilePath = 'media/ZIP/' + myfile
     request.session['filePath'] = zipFilePath
