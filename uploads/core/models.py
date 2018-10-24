@@ -9,7 +9,6 @@ class Document(models.Model):
 
 class PATIENT(models.Model):
     pid = models.CharField(max_length=50, null=True)
-    filename = models.CharField(max_length=50,null=True)
     pub_date = models.CharField(max_length=22,null=True)
     name = models.CharField(max_length=50,null=True)
     sex = models.CharField(max_length=1,null=True)
