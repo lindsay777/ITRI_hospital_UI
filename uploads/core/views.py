@@ -75,7 +75,7 @@ def patient_data(filepath, filename, saveType): # write into DB
         'age': age,
         'mp': mp,
         'dataset': dataset,
-        'datetime': datetime_str,
+        'dateTime': datetime_str,
     }
     if saveType == 'zip':
         # save to DB
@@ -294,6 +294,7 @@ def upload_dcm(request):
             data = patient_data(dcmFilePath, myfile, saveType)
             dataset = data['dataset']
             response.update(data)
+            print(response['dateTime'])
 
             # ----- get image report from IMG file -----  
             # pydicom example: https://goo.gl/SMyny4
@@ -722,7 +723,7 @@ def check_apspine(request):
     tscore = comments['tscore']
     zscore = comments['zscore']
 
-    data = patient_data(apspineFilePath, zipFolder)
+    data = patient_data(apspineFilePath, zipFolder, 'zip')
     response.update(data)
     
     # decide group
