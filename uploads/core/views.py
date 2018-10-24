@@ -78,8 +78,9 @@ def patient_data(filepath, saveType): # write into DB
         'dateTime': datetime_str,
     }
     if saveType == 'uploadZIP':
+        file_path = '/media/ZIP/' + pid
         # save to DB
-        fileInstance = PATIENT(pid=pid, pub_date=datetime_str, name=name, sex=sex, age=age, mp=mp)
+        fileInstance = PATIENT(pid=pid, file_path=file_path, pub_date=datetime_str, name=name, sex=sex, age=age, mp=mp)
         fileInstance.save()
     else:
         print('file does not save to DB')
@@ -365,8 +366,6 @@ def upload_zip(request):
                         # must add a '/' ahead
                         response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
                 except: # get value from STR file
-                    print('***')
-                    print(dcmFilePath)
                     response.update(str_data(dataset, 'uploadZIP'))
 
             response.update(patient_data(dcmFilePath, 'uploadZIP'))
@@ -571,30 +570,31 @@ def show_dcm(request):
     return render(request, 'core/show_dcm.html', response)
 
 def manage_zip(request):
-
-    folderPath = 'media/ZIP/'
-
-    # list files in the folder
-    onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-    # select files to remove
-    if request.method == 'POST':
-        selected = request.POST.getlist('selected')
-        result=''
-        response={}
-        for files in selected:
-            fileName = list(files)[:-4] # remove '.zip'
-            fileName = ''.join(fileName)
-            # remove zip file and extract folder
-            os.remove('media/ZIP/' + files) 
-            shutil.rmtree('media/ZIP/' + fileName)
+    # folderPath = 'media/ZIP/'
+    # # list files in the folder
+    # onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+    # # select files to remove
+    # if request.method == 'POST':
+    #     selected = request.POST.getlist('selected')
+    #     result=''
+    #     response={}
+    #     for files in selected:
+    #         fileName = list(files)[:-4] # remove '.zip'
+    #         fileName = ''.join(fileName)
+    #         # remove zip file and extract folder
+    #         os.remove('media/ZIP/' + files) 
+    #         shutil.rmtree('media/ZIP/' + fileName)
             
-            result+=fileName + ' '
-            response['result'] = result
-        return render(request, 'core/result.html', response)
+    #         result+=fileName + ' '
+    #         response['result'] = result
+    #     return render(request, 'core/result.html', response)
 
-    return render(request, 'core/manage_zip.html', {
-        'onlyfiles': onlyfiles,
-    })
+    # return render(request, 'core/manage_zip.html', {
+    #     'onlyfiles': onlyfiles,
+    # })
+    patients = PATIENT.objects.all()
+    return render(request, 'core/manage_zip.html', {'patients': patients})
+
 
 def manage_show_zip(request):
     # get the file name user clicked from template

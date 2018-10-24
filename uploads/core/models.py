@@ -8,16 +8,14 @@ class Document(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 class PATIENT(models.Model):
-    pid = models.CharField(max_length=50, null=True)
+    pid = models.CharField(max_length=20, null=True)
+    file_path = models.CharField(max_length=35, null=True)
     pub_date = models.CharField(max_length=22,null=True)
-    name = models.CharField(max_length=50,null=True)
+    name = models.CharField(max_length=30,null=True)
     sex = models.CharField(max_length=1,null=True)
     age = models.CharField(max_length=3,null=True)
     mp = models.CharField(max_length=3,null=True)
-
-    def __unicode__(self):
-        return self.pid
-
+    
 class FRAX(models.Model):
     pid = models.CharField(max_length=50, null=True)
     scantype = models.CharField(max_length=15,null=True)
