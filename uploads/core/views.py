@@ -615,18 +615,13 @@ def manage_zip(request):
 
 def manage_show_zip(request):
     # get the file name user clicked from template
-    myfile = request.GET.get('patient.pid', None)
-    print(myfile)
+    myfile = request.GET.get('file', None)
     request.session['myfile'] = myfile
     zipFilePath = 'media/ZIP/' + myfile
     request.session['filePath'] = zipFilePath
-
-    zipFolder = list(myfile)[:-4] # remove '.zip'
-    zipFolder = ''.join(zipFolder)
-    zipFolderPath = 'media/ZIP/' + zipFolder
     
     response={
-        'myfile': myfile,
+        'myZipFile': myfile,
         'zipFilePath': zipFilePath,
     }
 
@@ -646,7 +641,7 @@ def manage_show_zip(request):
     # contain '.dcm' files 
     file_tree = []
     # traverse root directory, and list directories as dirs and files as files
-    for root, dirs, files in os.walk(zipFolderPath):
+    for root, dirs, files in os.walk(zipFilePath):
         path = root.split(os.sep)
         line = ((len(path) - 1) * '---', os.path.basename(root))
         line = ''.join(line)
@@ -670,11 +665,8 @@ def manage_show_zip(request):
 def check_apspine(request):
     # need: apspine, lva, frax
     # get the file name user clicked from template
-    myZIPFile = request.session['myfile']
-    zipFolder = list(myZIPFile)[:-4] # remove '.zip'
-    zipFolder = ''.join(zipFolder)
-
-    zipFilePath = 'media/ZIP/' + zipFolder
+    pidFolder = request.session['myfile']
+    zipFilePath = 'media/ZIP/' + pidFolder
     strFilePath = zipFilePath + '/SDY00000/'
     response={}
     
@@ -686,6 +678,7 @@ def check_apspine(request):
     for files in onlyFiles:
         if "STR" in files:
             lstFilesDCM.append(files)
+    print(lstFilesDCM)
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in lstFilesDCM:
         filesPath = strFilePath + files
@@ -725,7 +718,7 @@ def check_apspine(request):
 
     #TODO: show which file is not exist
     
-    apspineFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_apspine
+    apspineFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_apspine
 
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
@@ -741,7 +734,7 @@ def check_apspine(request):
     tscore = comments['tscore']
     zscore = comments['zscore']
 
-    data = patient_data(apspineFilePath, zipFolder, 'zip')
+    data = patient_data(apspineFilePath, 'zip')
     response.update(data)
     
     # decide group
@@ -844,7 +837,7 @@ def check_apspine(request):
     if list_outcome in list_machineOutcome:
         response['result_correct'] = 'Correct'
         # Obtain LVA
-        lvaFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_lva
+        lvaFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_lva
         # read file
         dataset = pydicom.dcmread(lvaFilePath)
         comment = dataset.ImageComments
@@ -876,7 +869,7 @@ def check_apspine(request):
         response['grade'] = lvagrade
 
         # Obtain frax
-        fraxFilePath = 'media/ZIP/' + zipFolder + '/SDY00000/' + file_frax
+        fraxFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_frax
         # read file
         dataset = pydicom.dcmread(fraxFilePath)
         comment = dataset.ImageComments
