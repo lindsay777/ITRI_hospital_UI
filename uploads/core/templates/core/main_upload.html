@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <ul>
+    <li>
+      <a href="{% url 'upload_dcm' %}">Upload Single DCM file</a>
+    </li>
+    <li>
+      <a href="{% url 'upload_zip' %}">Upload Single ZIP file</a>
+    </li>
+    <li>
+      <a href="{% url 'upload_multi_zip' %}">Upload Multiple ZIP files</a>
+    </li>
+  </ul>
+
+{% endblock %}

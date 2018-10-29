@@ -3,19 +3,13 @@
 {% block content %}
   <ul>
     <li>
-      <a href="{% url 'upload_dcm' %}">Upload Single DCM file</a>
+      <a href="{% url 'main_upload' %}">Upload files</a>
     </li>
     <li>
-      <a href="{% url 'upload_zip' %}">Upload Single Zip file</a>
+      <a href="{% url 'main_manage' %}">Manage files</a>
     </li>
     <li>
-      <a href="{% url 'upload_multi_zip' %}">Upload Multiple Zip files</a>
-    </li>
-    <li>
-      <a href="{% url 'manage_dcm' %}">Manage Uploaded DCM files</a>
-    </li>
-    <li>
-      <a href="{% url 'manage_zip' %}">Manage Uploaded ZIP files</a>
+      <a href="{% url 'statistics' %}">Statistics</a>
     </li>
   </ul>
 

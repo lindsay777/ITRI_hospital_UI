@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <ul>
+    <li>
+      <a href="{% url 'manage_dcm' %}">Manage Uploaded DCM files</a>
+    </li>
+    <li>
+      <a href="{% url 'manage_zip' %}">Manage Uploaded ZIP files</a>
+    </li>
+  </ul>
+
+{% endblock %}

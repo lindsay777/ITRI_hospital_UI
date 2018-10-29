@@ -40,8 +40,7 @@ from reportlab.pdfgen import canvas
 #check if getting data is not from filename
 
 def home(request):
-    documents = Document.objects.all()
-    return render(request, 'core/home.html', { 'documents': documents })
+    return render(request, 'core/home.html')
 
 def patient_data(filepath, saveType): # write into DB
     # read file
@@ -266,6 +265,9 @@ def read_dcm(dcmFilePath):
     # get data from DB
     print('hello')
 
+def main_upload(request):
+    return render(request, 'core/main_upload.html')
+
 def upload_dcm(request):
     if request.method == 'POST' and request.FILES['myfile']:
         response = {}
@@ -291,8 +293,7 @@ def upload_dcm(request):
             dcmFilePath = 'media/DCM/' + myfile
 
             # patient_data
-            saveType = 'dcm'
-            data = patient_data(dcmFilePath, saveType)
+            data = patient_data(dcmFilePath, 'dcm')
             dataset = data['dataset']
             response.update(data)
             print(response['dateTime'])
@@ -308,7 +309,7 @@ def upload_dcm(request):
             # -------- get value from STR file --------
             except:   
                 # str_data
-                response.update(str_data(dataset, saveType))
+                response.update(str_data(dataset, 'dcm'))
 
             uploaded_file_url = fs.url(myfile)
             response['uploaded_file_url'] = uploaded_file_url
@@ -472,7 +473,6 @@ def upload_multi_zip(request): #批次處理 未做
 
 def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
     response = {}
-    saveType = 'zip'
     zipFolder = request.session['myfile']
     pid = request.session['pid']
 
@@ -487,7 +487,7 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
         filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
 
     # read file
-    data = patient_data(filePath, saveType)
+    data = patient_data(filePath, 'zip')
     dataset = data['dataset']
     response.update(data)
 
@@ -501,9 +501,12 @@ def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一�
 
     # -------- get value from STR file --------
     except:
-        response.update(str_data(dataset, saveType))
+        response.update(str_data(dataset, 'zip'))
 
     return render(request, 'core/show_zip.html', response)
+
+def main_manage(request):
+    return render(request, 'core/main_manage.html')
 
 def manage_dcm(request):
 
@@ -549,7 +552,7 @@ def show_dcm(request):
     request.session['filePath'] = filePath
 
     # patient_data & upload to DB
-    data = patient_data(filePath, myfile)
+    data = patient_data(filePath, 'dcm')
     dataset = data['dataset']
     response.update(data)
 
@@ -565,7 +568,7 @@ def show_dcm(request):
     # -------- get value from STR file --------
     except:
         # str_data & upload to DB
-        response.update(str_data(dataset))
+        response.update(str_data(dataset, 'dcm'))
 
     return render(request, 'core/show_dcm.html', response)
 
@@ -902,6 +905,9 @@ def check_apspine(request):
 
     return render(request, 'core/check_apspine.html', response)
 
+def statistics(request):
+    return render(request, 'core/statistics.html')
+    
 def report(request):
     reportVar = request.session['reportVar']
     print(reportVar)
