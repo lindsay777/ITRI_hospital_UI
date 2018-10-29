@@ -1,16 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <ul>
-    <li>
-      <a href="{% url 'upload_dcm' %}">Upload Single DCM file</a>
-    </li>
-    <li>
-      <a href="{% url 'upload_zip' %}">Upload Single ZIP file</a>
-    </li>
-    <li>
-      <a href="{% url 'upload_multi_zip' %}">Upload Multiple ZIP files</a>
-    </li>
-  </ul>
-
+  <div class="text-center">
+    <br>
+    <a href="{% url 'upload_dcm' %}"><button type="button" class="btn btn-outline-primary btn-lg">Upload Single DCM file</button></a>
+    <br>
+    <br>
+    <a href="{% url 'upload_zip' %}"><button type="button" class="btn btn-outline-primary btn-lg">Upload Single ZIP file</button></a>
+    <br>
+    <br>
+    <a href="{% url 'upload_multi_zip' %}"><button type="button" class="btn btn-outline-primary btn-lg">Upload Multiple ZIP files</button></a>  
+  </div>
 {% endblock %}

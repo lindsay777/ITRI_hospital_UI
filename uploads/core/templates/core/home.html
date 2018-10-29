@@ -1,16 +1,14 @@
 {% extends 'base.html' %}
 
-{% block content %}
-  <ul>
-    <li>
-      <a href="{% url 'main_upload' %}">Upload files</a>
-    </li>
-    <li>
-      <a href="{% url 'main_manage' %}">Manage files</a>
-    </li>
-    <li>
-      <a href="{% url 'statistics' %}">Statistics</a>
-    </li>
-  </ul>
-
+{% block content %}  
+  <br>
+  <div class="container">
+    <div class="row justify-content-center">
+      <a href="{% url 'main_upload' %}"><button type="button" class="btn btn-outline-primary btn-lg">Upload</button></a>
+      <div class="ml-3 mr-3">
+        <a href="{% url 'main_manage' %}"><button type="button" class="btn btn-outline-danger btn-lg">Manage</button></a>
+      </div>
+      <a href="{% url 'statistics' %}"><button type="button" class="btn btn-outline-warning btn-lg">Statistics</button></a>  
+    </div>
+  </div>
 {% endblock %}

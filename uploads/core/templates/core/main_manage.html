@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <ul>
-    <li>
-      <a href="{% url 'manage_dcm' %}">Manage Uploaded DCM files</a>
-    </li>
-    <li>
-      <a href="{% url 'manage_zip' %}">Manage Uploaded ZIP files</a>
-    </li>
-  </ul>
-
+  <div class="text-center">
+    <br>
+    <a href="{% url 'manage_dcm' %}"><button type="button" class="btn btn-outline-primary btn-lg">Manage Uploaded DCM files</button></a>
+    <br>
+    <br>
+    <a href="{% url 'manage_zip' %}"><button type="button" class="btn btn-outline-primary btn-lg">Manage Uploaded ZIP files</button></a>
+  </div>
 {% endblock %}
