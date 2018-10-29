@@ -318,7 +318,141 @@ def upload_dcm(request):
     else:
         return render(request, 'core/upload_dcm.html')
         
+def zip_process(request):
+    DCMFiles = []
+    # move file form media/ to media/zip/ folder
+    shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+    # read zip file
+    zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
+    # extract zip file
+    for file in zip_file.namelist():
+        zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
+        if ".dcm" in file.lower():
+            DCMFiles.append(file)
+    zip_file.close()
+
+    # read each file and save to DB
+    for file in DCMFiles:
+        dcmFilePath = 'media/ZIP/' + file
+        dataset = pydicom.dcmread(dcmFilePath)
+
+        try:    # get image report from IMG file
+            dataset.pixel_array
+            if cv2.imwrite('media/ZIP/JPG/' + file + '_report.jpg', dataset.pixel_array):
+                # must add a '/' ahead
+                response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
+        except: # get value from STR file
+            response.update(str_data(dataset, 'uploadZIP'))
+
+    response.update(patient_data(dcmFilePath, 'uploadZIP'))
+    request.session['pid'] = response['pid']
+    #change filename to pid
+    os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
+    os.rename('media/ZIP/' + zipFolder, 'media/ZIP/' + response['pid'])
+    zipFolder = 'media/ZIP/' + response['pid']
+
+    response['myZipFile'] = myZipFile
+    return response
+
 def upload_zip(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        response = {}
+
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        myZipFile = fs.save(myfile.name, myfile)
+        request.session['myZipFile']=myZipFile
+
+        # get folder name of the extracted zip file
+        zipFolder = list(myZipFile)[:-4] #remove '.zip'
+        zipFolder = ''.join(zipFolder)
+        
+        # get file list in the folder
+        onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
+
+        #-----------------------------------------------------------------------------------
+        DCMFiles = []
+        # read zip file
+        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', myZipFile))
+        # extract zip file
+        for file in zip_file.namelist():
+            zip_file.extract(file, os.path.join(os.getcwd(), 'media/'))
+            if ".dcm" in file.lower():
+                DCMFiles.append(file)
+        zip_file.close()
+        
+        # if the filename(pid.zip) already exists, show warning
+        dcmFilePath = 'media/' + str(DCMFiles[-1])
+        pid = pydicom.dcmread(dcmFilePath).PatientID + '.zip'
+        print('hihi')
+        print(myZipFile)
+        print(zipFolder)
+        if pid in onlyfiles:
+            os.remove('media/'+myZipFile)
+            print('test')
+            shutil.rmtree('media/'+zipFolder)
+            print('testest')
+            response = {
+                'warning_origin':myZipFile,
+                'warning_pid':pid
+            }
+            return render(request, 'core/upload_zip.html', response)
+        else:
+            # move file form media/ to media/zip/ folder
+            shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+            shutil.move('media/'+zipFolder, 'media/ZIP/'+zipFolder)
+            # read each file and save to DB
+            for file in DCMFiles:
+                dcmFilePath = 'media/ZIP/' + file
+                dataset = pydicom.dcmread(dcmFilePath)
+
+                try:    # get image report from IMG file
+                    dataset.pixel_array
+                    if cv2.imwrite('media/ZIP/JPG/' + file + '_report.jpg', dataset.pixel_array):
+                        # must add a '/' ahead
+                        response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
+                except: # get value from STR file
+                    response.update(str_data(dataset, 'uploadZIP'))
+
+            response.update(patient_data(dcmFilePath, 'uploadZIP'))
+            request.session['pid'] = response['pid']
+            #change filename to pid
+            os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
+            os.rename('media/ZIP/' + zipFolder, 'media/ZIP/' + response['pid'])
+            zipFolder = 'media/ZIP/' + response['pid']
+        
+            response['myZipFile'] = myZipFile
+            #-----------------------------------------------------------------------------------
+
+        # directory tree
+        dir_tree = []
+        # contain '.dcm' files 
+        file_tree = []
+        # traverse root directory, and list directories as dirs and files as files
+        for root, dirs, files in os.walk(zipFolder):
+            path = root.split(os.sep)
+            line = ((len(path) - 1) * '---', os.path.basename(root))
+            line = ''.join(line)
+            dir_tree.append(line)
+            file_tree.append('')
+            for file in files:
+                line = (len(path) * '---', file)
+                line = ''.join(line)
+                dir_tree.append(line)
+                file_tree.append(file)
+        response['dir_tree'] = dir_tree
+        response['file_tree'] = file_tree
+        # zip so that templates can show
+        file_dir_list = zip(dir_tree, file_tree)
+        response['file_dir_list'] = file_dir_list
+
+        response['uploaded_file_url'] = fs.url(myZipFile)
+        
+        return render(request, 'core/upload_zip.html', response)
+    else: 
+        return render(request, 'core/upload_zip.html')
+
+def upload_multi_zip(request): #批次處理 未做
     if request.method == 'POST' and request.FILES['myfile']:
         response = {}
 
@@ -385,70 +519,6 @@ def upload_zip(request):
             file_tree = []
             # traverse root directory, and list directories as dirs and files as files
             for root, dirs, files in os.walk(zipFolder):
-                path = root.split(os.sep)
-                line = ((len(path) - 1) * '---', os.path.basename(root))
-                line = ''.join(line)
-                dir_tree.append(line)
-                file_tree.append('')
-                for file in files:
-                    line = (len(path) * '---', file)
-                    line = ''.join(line)
-                    dir_tree.append(line)
-                    file_tree.append(file)
-            response['dir_tree'] = dir_tree
-            response['file_tree'] = file_tree
-            # zip so that templates can show
-            file_dir_list = zip(dir_tree, file_tree)
-            response['file_dir_list'] = file_dir_list
-
-            response['uploaded_file_url'] = fs.url(myZipFile)
-            
-            return render(request, 'core/upload_zip.html', response)
-    else: 
-        return render(request, 'core/upload_zip.html')
-
-def upload_multi_zip(request): #批次處理 未做
-    if request.method == 'POST' and request.FILES['myfile']:
-        myfile = request.FILES['myfile']
-        fs = FileSystemStorage()
-        myZipFile = fs.save(myfile.name, myfile)
-        request.session['myZipFile']=myZipFile
-
-        # get folder name of the extracted zip file
-        zipFolder = list(myZipFile)[:-4] #remove '.zip'
-        zipFolder = ''.join(zipFolder)
-        zipFilePath = 'media/ZIP/' + zipFolder
-        
-        # get file list in the folder
-        onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
-        # if the file name already exists, show warning
-        if myZipFile in onlyfiles:
-            os.remove('media/'+myZipFile)
-            response = {
-                'warning':myZipFile
-            }
-            return render(request, 'core/upload_multi_zip.html', response)
-        
-        else: 
-            # move file form media/ to media/zip/ folder
-            shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
-            # read zip file
-            zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/ZIP/', myZipFile))
-            # extract zip file
-            for file in zip_file.namelist():
-                zip_file.extract(file, os.path.join(os.getcwd(), 'media/ZIP/'))
-
-            response={
-                'myZipFile': myZipFile,
-                'zipFilePath': zipFilePath,
-            }
-
-            # directory tree
-            dir_tree = []
-            # contain '.dcm' files 
-            file_tree = []
-            # traverse root directory, and list directories as dirs and files as files
-            for root, dirs, files in os.walk(zipFilePath):
                 path = root.split(os.sep)
                 line = ((len(path) - 1) * '---', os.path.basename(root))
                 line = ''.join(line)

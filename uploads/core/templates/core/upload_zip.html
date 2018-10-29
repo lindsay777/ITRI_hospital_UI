@@ -16,8 +16,9 @@
     </div>
   </form>
 
-  {% if warning %}
-    <li>{{ warning }} already exists!!</li>
+  {% if warning_origin %}
+    {{ warning_origin }} already exists!!<br>
+    Same as the file {{ warning_pid }}
   {% endif %}
 
   {% if uploaded_file_url %}
