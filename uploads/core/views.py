@@ -17,6 +17,7 @@ import zipfile
 import cv2
 import os
 import shutil
+import time
 import re
 from datetime import datetime
 from pydicom.data import get_testdata_files
@@ -425,9 +426,29 @@ def upload_zip(request):
     else: 
         return render(request, 'core/upload_zip.html')
 
-#def upload_multi_zip(request): #批次處理
+def upload_multi_zip(request): #批次處理
+    if request.method == 'POST' and request.FILES.getlist('myfile'):
+        start = time.clock()
+        response = {}
 
-def show_zip(request): #要改成從資料庫叫資料? 不改的話 不能一直寫進資料庫!
+        myfiles = request.FILES.getlist('myfile')
+        fs = FileSystemStorage()
+
+        for myfile in myfiles:
+            print(myfile)
+            myZipFile = fs.save(myfile.name, myfile)
+            # get folder name of the extracted zip file
+            zipFolder = list(myZipFile)[:-4] #remove '.zip'
+            zipFolder = ''.join(zipFolder)
+            data = zip_process(myZipFile, zipFolder)
+
+        response['time'] = time.clock() - start
+        response['uploaded_file_url'] = fs.url(myZipFile)  
+        return render(request, 'core/upload_multi_zip.html', response)
+    else: 
+        return render(request, 'core/upload_multi_zip.html')
+
+def show_zip(request):
     response = {}
     zipFolder = request.session['myfile']
     pid = request.session['pid']

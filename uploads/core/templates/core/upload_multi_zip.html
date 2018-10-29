@@ -5,37 +5,33 @@
 {% block content %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" name="myfile">
-    <button type="submit">Upload</button>
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <!-- <input type="file" name="myfile" class="custom-file-input" id="inputGroupFile02" onchange="$('#upload-file-info').html(this.files[0].name)"> -->
+        <input id="file-1" type="file" class="file" multiple=true>
+        <!-- <input type="file" name="myfile" multiple> -->
+        <!-- <button type="submit" class="btn btn-primary ml-1">Upload</button> -->
+      </div>
+    </div>
   </form>
 
-  {% if warning %}
-    <li>{{ warning }} already exists!!</li>
+  {% if warning_origin %}
+    {{ warning_origin }} already exists!!<br>
+    Same as the file {{ warning_pid }}
   {% endif %}
 
   {% if uploaded_file_url %}
-    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
-
-    <li>zipFileName: {{ zipFileName }}</li>
-    <li>zipFilePath: {{ zipFilePath }}</li>
-    <li>dir_tree:</li>
-    
-    {% for dir, file in file_dir_list %}
-      {% if '.dcm' in file %}
-        <div>
-          <a href="{% url 'show_zip' %}?file={{file}}">{{ dir }}</a>
-        </div>
-
-      {% else %}
-        <div>
-          {{ dir }}
-        </div>
-      {% endif %}
-      
-    {% endfor %}
-
+    <p>Files uploaded success!</p>
+    <p>Execution time: {{ time }}</p>
   {% endif %}
 
-  <p><a href="{% url 'home' %}">Return to home</a></p>
-{% endblock %}
+  <script>
+      $("#file-1").fileinput({
+        showPreview: false, //是否顯示預覽
+        // uploadUrl: window.location.href, // you must set a valid URL here else you will get an error
+        // allowedFileExtensions: ['jpg', 'png', 'gif'],
+        showUpload: true, //是否顯示上傳按鈕
+      });
+    </script>
 
+{% endblock %}
