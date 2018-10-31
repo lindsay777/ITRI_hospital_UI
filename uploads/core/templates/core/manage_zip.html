@@ -6,14 +6,14 @@
 
   <form action="/uploads/manageZIP/" method="post">
     {% csrf_token %}
-    <button type="submit" class="btn btn-outline-primary mb-3">Delete</button>
-    <button type="button" onclick="select_all()">Select All</button>
+    <button type="submit" class="btn btn-outline-danger mb-3">Delete</button>
+    <button type="button" class="btn btn-outline-primary mb-3" id="checkAll">Select All</button>
     <br>
 
     <ul class="list-group list-group-flush align-center">
       {% for patient in patients %}
       <li class="list-group-item">
-        <input class="ml-3" type='checkbox' name='selected' value={{patient.pid}}>
+        <input class="ml-3" type='checkbox' name='checked' value={{patient.pid}}>
         <label><a href="{% url 'manage_show_zip' %}?file={{ patient.pid }}">{{ patient.pid }}</a></label>
         <span class="badge badge-primary badge-pill ml-3">{{ patient.pub_date }}</span>
       </li>
@@ -21,5 +21,18 @@
     </ul>
 
   </form>
+
+  <script>
+    var checked = false
+    $('#checkAll').click(function() {
+      if(checked == false){
+        $('input[name=checked]').prop('checked', true);
+        checked = true
+      } else{
+        $('input[name=checked]').prop('checked', false);
+        checked = false
+      }
+    });
+  </script>
 
 {% endblock %}

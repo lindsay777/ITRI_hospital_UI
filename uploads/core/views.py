@@ -947,6 +947,7 @@ def rename(request):
 def remove(request):
     # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
+    print(myfile)
 
     # get file type (dcm or zip)
     fileType = list(myfile)[-3:]
