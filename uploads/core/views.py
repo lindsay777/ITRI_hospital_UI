@@ -518,9 +518,15 @@ def manage_dcm(request): #remove
 
 def show_dcm(request): #remove
     response = {}
+
+    if request.method == 'POST':
+        remove(request.session['myfile'], 'dcm')
+        response['result'] = request.session['myfile']
+        return render(request, 'core/result.html', response)
+
     # get the file user clicked from template
     myfile = request.GET.get('file', None)
-    request.session['myfile'] = myfile
+    request.session['myfile'] = myfile    
 
     fileName = list(myfile)[:-4] # remove '.dcm'
     fileName = ''.join(fileName)
@@ -557,15 +563,15 @@ def manage_zip(request): #remove
     # select files to remove
     if request.method == 'POST':
         response = {}
-        selected = request.POST.getlist('selected')
-        remove(selected)
-        response['result'] = selected
+        checked = request.POST.getlist('checked')
+        remove(checked, 'zip')
+        response['result'] = checked
         return render(request, 'core/result.html', response)
     #--------------------------------------
 
     return render(request, 'core/manage_zip.html', {'patients': patients})
 
-def manage_show_zip(request):
+def manage_show_zip(request): #remove
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
     request.session['myfile'] = myfile
@@ -915,32 +921,32 @@ def rename(request):
     else:
         return render(request, 'core/result.html')
 
-def remove(myfiles):
-    for myfile in myfiles:
-        print('myfile', myfile)
-        # get file type (dcm or zip)
-        fileType = ''.join(list(myfile)[-3:])
-        print(fileType)
-        # if the file is a zip, remove both zip and the extracted folder
-        if fileType.startswith('zip'):
-            print('ZIP')
-            folderName = ''.join(list(myfile)[:-4])
+def remove(myfiles, fileType):
+    # if the file is a zip, remove both zip and the extracted folder
+    if fileType=='zip':
+        for myfile in myfiles:
             # remove from DB
-            PATIENT.objects.filter(pid=folderName).delete()
-            print(folderName + 'is deleted')
+            PATIENT.objects.filter(pid=myfile).delete()
+            COMBINATION.objects.filter(pid=myfile).delete()
+            DUALFEMUR.objects.filter(pid=myfile).delete()
+            FRAX.objects.filter(pid=myfile).delete()
+            LVA.objects.filter(pid=myfile).delete()
+            APSPINE.objects.filter(pid=myfile).delete()
+            print(myfile + 'is deleted')
             # remove from folder
-            os.remove('media/ZIP/' + myfile)
-            shutil.rmtree('media/ZIP/' + folderName)
-        # if the file is a dcm, remove dcm
-        elif fileType.startswith('dcm'):
-            print('DCM')
-            os.remove('media/DCM/' + myfile)
-            dir_list = os.listdir('media/DCM/JPG/')
-            fileName = list(myfile)[:-4]
-            fileName = ''.join(fileName)
-            reportName = fileName + '_report.jpg'
-            if reportName in dir_list:
-                os.remove('media/DCM/JPG/' + reportName)
+            os.remove('media/ZIP/' + myfile + '.zip')
+            shutil.rmtree('media/ZIP/' + myfile)
+    # if the file is a dcm, remove dcm
+    elif fileType=='dcm':
+        os.remove('media/DCM/' + myfiles)
+        dir_list = os.listdir('media/DCM/JPG/')
+        fileName = list(myfiles)[:-4]
+        fileName = ''.join(fileName)
+        reportName = fileName + '_report.jpg'
+        if reportName in dir_list:
+            os.remove('media/DCM/JPG/' + reportName)
+    else:
+        print('Wrong File Type!!!')
 
 def download(request):
     # get file path from show_DCM
