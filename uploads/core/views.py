@@ -37,13 +37,11 @@ from reportlab.pdfgen import canvas
 # show_dcm/ manage_show_zip: myfile
 
 #TODO: TBS
-#TODO: MANAGE_ZIP: multi file process
-#check if getting data is not from filename
 
 def home(request):
     return render(request, 'core/home.html')
 
-def patient_data(filepath, saveType): # write into DB
+def patient_data(filepath, saveType):
     # read file
     dataset = pydicom.dcmread(filepath)
 
@@ -86,7 +84,7 @@ def patient_data(filepath, saveType): # write into DB
         print('file does not save to DB')
     return response
 
-def str_data(dataset, saveType): #write into DB
+def str_data(dataset, saveType):
     response = {}
     pid = dataset.PatientID
     comment = dataset.ImageComments
@@ -262,8 +260,7 @@ def t_z_r(comment):
 
     return comments
 
-def read_dcm(dcmFilePath):
-    # get data from DB
+def read_dcm(dcmFilePath): # get data from DB
     print('hello')
 
 def main_upload(request):
@@ -320,7 +317,6 @@ def upload_dcm(request):
         return render(request, 'core/upload_dcm.html')
         
 def zip_process(myZipFile, zipFolder):
-    #-----------------------------------------------------------------------------------  
     response={}
     # get file list in the folder
     onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
@@ -369,10 +365,7 @@ def zip_process(myZipFile, zipFolder):
         os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
         os.rename('media/ZIP/' + zipFolder, 'media/ZIP/' + response['pid'])
         
-    
         response['myZipFile'] = myZipFile
-    #-----------------------------------------------------------------------------------
-
     return response
 
 def upload_zip(request):
@@ -424,7 +417,7 @@ def upload_zip(request):
     else: 
         return render(request, 'core/upload_zip.html')
 
-def upload_multi_zip(request): #批次處理
+def upload_multi_zip(request):
     if request.method == 'POST' and request.FILES.getlist('myfile'):
         start = time.clock()
         response = {}
@@ -444,19 +437,12 @@ def upload_multi_zip(request): #批次處理
 
             try:
                 data['warning_origin']
-                print('failed')
-                errorlist.append(data['warning_origin'])
-                print(errorlist)
-                print('---')             
+                errorlist.append(data['warning_origin'])          
             except:
-                print('success')
                 successlist.append(myZipFile)
-                print(successlist)
-                print('===')
-
-
         response['failed'] = errorlist
-        response['success'] = successlist 
+        response['success'] = successlist
+
         response['time'] = time.clock() - start
         response['uploaded_file_url'] = fs.url(myZipFile)  
         return render(request, 'core/upload_multi_zip.html', response)
@@ -483,7 +469,7 @@ def show_zip(request):
     dataset = data['dataset']
     response.update(data)
 
-     # ----- get image report from IMG file -----  
+    # ----- get image report from IMG file -----  
     # pydicom example: https://goo.gl/SMyny4
     try:
         dataset.pixel_array
@@ -500,18 +486,18 @@ def show_zip(request):
 def main_manage(request):
     return render(request, 'core/main_manage.html')
 
-def manage_dcm(request):
-
+def manage_dcm(request): #remove
     folderPath = 'media/DCM/'
-
     # list files in the folder
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
     # remove selected files
     if request.method == 'POST':
         selected = request.POST.getlist('selected')
+        print(selected)
         result = '' 
         response = {}
         for files in selected:
+            print(files)
             os.remove(folderPath + files)
 
             # check if the file has corresponding report, if yes, remove as well  
@@ -530,7 +516,7 @@ def manage_dcm(request):
         'onlyfiles': onlyfiles,
     })
 
-def show_dcm(request):
+def show_dcm(request): #remove
     response = {}
     # get the file user clicked from template
     myfile = request.GET.get('file', None)
@@ -564,47 +550,18 @@ def show_dcm(request):
 
     return render(request, 'core/show_dcm.html', response)
 
-def manage_zip(request):
-    # folderPath = 'media/ZIP/'
-    # # list files in the folder
-    # onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-    # # select files to remove
-    # if request.method == 'POST':
-    #     selected = request.POST.getlist('selected')
-    #     result=''
-    #     response={}
-    #     for files in selected:
-    #         fileName = list(files)[:-4] # remove '.zip'
-    #         fileName = ''.join(fileName)
-    #         # remove zip file and extract folder
-    #         os.remove('media/ZIP/' + files) 
-    #         shutil.rmtree('media/ZIP/' + fileName)
-            
-    #         result+=fileName + ' '
-    #         response['result'] = result
-    #     return render(request, 'core/result.html', response)
-
-    # return render(request, 'core/manage_zip.html', {
-    #     'onlyfiles': onlyfiles,
-    # })
-
+def manage_zip(request): #remove
     # get patient data from DB
     patients = PATIENT.objects.all()
+    #--------------------------------------
     # select files to remove
     if request.method == 'POST':
+        response = {}
         selected = request.POST.getlist('selected')
-        result=''
-        response={}
-        for files in selected:
-            fileName = list(files)[:-4] # remove '.zip'
-            fileName = ''.join(fileName)
-            # remove zip file and extract folder
-            os.remove('media/ZIP/' + files) 
-            shutil.rmtree('media/ZIP/' + fileName)
-            
-            result+=fileName + ' '
-            response['result'] = result
+        remove(selected)
+        response['result'] = selected
         return render(request, 'core/result.html', response)
+    #--------------------------------------
 
     return render(request, 'core/manage_zip.html', {'patients': patients})
 
@@ -626,7 +583,11 @@ def manage_show_zip(request):
         result=''
         response={}
         for files in selected:
-            os.remove('media/ZIP/' + files)            
+            zipFolder = ''.join(list(files)[:-4])   #remove '.zip'
+
+            os.remove('media/ZIP/' + files)
+            shutil.rmtree('media/'+ zipFolder)
+
             result+=myfile + ' '
             response['result'] = result
         return render(request, 'core/result.html', response)
@@ -954,28 +915,25 @@ def rename(request):
     else:
         return render(request, 'core/result.html')
 
-def remove(request):
-    # get file name from show_DCM/manage_show_zip
-    myfile = request.session['myfile']
-    print(myfile)
-
-    # get file type (dcm or zip)
-    fileType = list(myfile)[-3:]
-    fileType = ''.join(fileType)
- 
-    if request.method == 'POST':
-        response={}
-        response['result']=myfile
-
+def remove(myfiles):
+    for myfile in myfiles:
+        print('myfile', myfile)
+        # get file type (dcm or zip)
+        fileType = ''.join(list(myfile)[-3:])
+        print(fileType)
         # if the file is a zip, remove both zip and the extracted folder
         if fileType.startswith('zip'):
-            folderName = list(myfile)[:-4]
-            folderName = ''.join(folderName)
-
+            print('ZIP')
+            folderName = ''.join(list(myfile)[:-4])
+            # remove from DB
+            PATIENT.objects.filter(pid=folderName).delete()
+            print(folderName + 'is deleted')
+            # remove from folder
             os.remove('media/ZIP/' + myfile)
             shutil.rmtree('media/ZIP/' + folderName)
         # if the file is a dcm, remove dcm
         elif fileType.startswith('dcm'):
+            print('DCM')
             os.remove('media/DCM/' + myfile)
             dir_list = os.listdir('media/DCM/JPG/')
             fileName = list(myfile)[:-4]
@@ -983,10 +941,6 @@ def remove(request):
             reportName = fileName + '_report.jpg'
             if reportName in dir_list:
                 os.remove('media/DCM/JPG/' + reportName)
-
-        return render(request, 'core/result.html', response)
-    else:
-        return render(request, 'core/result.html')
 
 def download(request):
     # get file path from show_DCM
