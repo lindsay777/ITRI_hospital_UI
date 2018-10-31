@@ -21,7 +21,8 @@
   {% endif %}
 
   {% if uploaded_file_url %}
-    <p>Files uploaded success!</p>
+    <p>Files uploaded success: {{ success }}</p>
+    <p>Files uploaded failed: {{ failed }}</p>
     <p>Execution time: {{ time }}</p>
   {% endif %}
 

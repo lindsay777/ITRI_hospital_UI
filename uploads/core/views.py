@@ -341,9 +341,7 @@ def zip_process(myZipFile, zipFolder):
 
     if pid in onlyfiles:
         os.remove('media/'+myZipFile)
-        print('test')
         shutil.rmtree('media/'+zipFolder)
-        print('testest')
         response = {
             'warning_origin':myZipFile,
             'warning_pid':pid
@@ -430,18 +428,35 @@ def upload_multi_zip(request): #批次處理
     if request.method == 'POST' and request.FILES.getlist('myfile'):
         start = time.clock()
         response = {}
+        errorlist = []
+        successlist = []
 
         myfiles = request.FILES.getlist('myfile')
         fs = FileSystemStorage()
 
         for myfile in myfiles:
-            print(myfile)
+            data={}
             myZipFile = fs.save(myfile.name, myfile)
             # get folder name of the extracted zip file
             zipFolder = list(myZipFile)[:-4] #remove '.zip'
             zipFolder = ''.join(zipFolder)
             data = zip_process(myZipFile, zipFolder)
 
+            try:
+                data['warning_origin']
+                print('failed')
+                errorlist.append(data['warning_origin'])
+                print(errorlist)
+                print('---')             
+            except:
+                print('success')
+                successlist.append(myZipFile)
+                print(successlist)
+                print('===')
+
+
+        response['failed'] = errorlist
+        response['success'] = successlist 
         response['time'] = time.clock() - start
         response['uploaded_file_url'] = fs.url(myZipFile)  
         return render(request, 'core/upload_multi_zip.html', response)
@@ -658,7 +673,6 @@ def check_apspine(request):
     for files in onlyFiles:
         if "STR" in files:
             lstFilesDCM.append(files)
-    print(lstFilesDCM)
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in lstFilesDCM:
         filesPath = strFilePath + files
@@ -757,7 +771,6 @@ def check_apspine(request):
             machineOutcome = machineOutcome + ', ' + str(substring[0])
         list_machineOutcome.append(substring[0])
     response['machineOutcome'] = machineOutcome
-    print(list_machineOutcome)
 
     merge = merge[:4]
 
@@ -810,9 +823,6 @@ def check_apspine(request):
     list_outcome = ''.join(list(outcome))
     response['outcome'] = outcome
     
-    print('='*50)
-    print(list_outcome)
-    print(list_machineOutcome)
     # check the result to determine re-gen or not
     if list_outcome in list_machineOutcome:
         response['result_correct'] = 'Correct'
