@@ -557,46 +557,40 @@ def show_dcm(request): #remove
     return render(request, 'core/show_dcm.html', response)
 
 def manage_zip(request): #remove
-    # get patient data from DB
-    patients = PATIENT.objects.all()
-    #--------------------------------------
+    response={}
     # select files to remove
     if request.method == 'POST':
-        response = {}
         checked = request.POST.getlist('checked')
-        remove(checked, 'zip')
+        if len(checked) > 1:
+            remove(checked, 'multiZIP')
+        else:   #TODO: error
+            print('hi')
+            remove(checked, 'zip')
         response['result'] = checked
         return render(request, 'core/result.html', response)
-    #--------------------------------------
+    # get patient data from DB
+    patients = PATIENT.objects.all()
 
     return render(request, 'core/manage_zip.html', {'patients': patients})
 
-def manage_show_zip(request): #remove
+def manage_show_zip(request): 
+    response={}
+    print(request.session['myfile'])
+    if request.method == 'POST':    #remove
+        remove(request.session['myfile'], 'zip')
+        response['result'] = request.session['myfile']
+        return render(request, 'core/result.html', response)
+
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
-    request.session['myfile'] = myfile
+    request.session['myfile'] = myfile + '.zip'
     zipFilePath = 'media/ZIP/' + myfile
-    request.session['filePath'] = zipFilePath
+    request.session['filePath'] = zipFilePath + '.zip'
     
     response={
         'myZipFile': myfile,
         'zipFilePath': zipFilePath,
     }
-
-    # remove selected files
-    if request.method == 'POST':
-        selected = request.POST.getlist('selected')
-        result=''
-        response={}
-        for files in selected:
-            zipFolder = ''.join(list(files)[:-4])   #remove '.zip'
-
-            os.remove('media/ZIP/' + files)
-            shutil.rmtree('media/'+ zipFolder)
-
-            result+=myfile + ' '
-            response['result'] = result
-        return render(request, 'core/result.html', response)
 
     # directory tree
     dir_tree = []
@@ -923,7 +917,7 @@ def rename(request):
 
 def remove(myfiles, fileType):
     # if the file is a zip, remove both zip and the extracted folder
-    if fileType=='zip':
+    if fileType=='multiZIP':
         for myfile in myfiles:
             # remove from DB
             PATIENT.objects.filter(pid=myfile).delete()
@@ -936,6 +930,19 @@ def remove(myfiles, fileType):
             # remove from folder
             os.remove('media/ZIP/' + myfile + '.zip')
             shutil.rmtree('media/ZIP/' + myfile)
+    elif fileType=='zip':
+        myfiles = myfiles[0]
+        # remove from DB
+        PATIENT.objects.filter(pid=myfiles).delete()
+        COMBINATION.objects.filter(pid=myfiles).delete()
+        DUALFEMUR.objects.filter(pid=myfiles).delete()
+        FRAX.objects.filter(pid=myfiles).delete()
+        LVA.objects.filter(pid=myfiles).delete()
+        APSPINE.objects.filter(pid=myfiles).delete()
+        #print(myfiles + 'is deleted')
+        # remove from folder
+        os.remove('media/ZIP/' + myfiles + '.zip')
+        shutil.rmtree('media/ZIP/' + myfiles)
     # if the file is a dcm, remove dcm
     elif fileType=='dcm':
         os.remove('media/DCM/' + myfiles)
@@ -949,14 +956,14 @@ def remove(myfiles, fileType):
         print('Wrong File Type!!!')
 
 def download(request):
-    # get file path from show_DCM
+    # get file path from show_DCM/manage_show_zip
     filePath = request.session['filePath']
     # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
     # get file type (dcm or zip)
-    fileType = list(myfile)[-3:]
+    fileType = list(myfile)[-3:] 
     fileType = ''.join(fileType)
-
+    print(filePath)
     if request.method == 'POST':
         if os.path.exists(filePath):
             with open(filePath, 'rb') as fh:

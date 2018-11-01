@@ -14,7 +14,7 @@
       {% for patient in patients %}
       <li class="list-group-item">
         <input class="ml-3" type='checkbox' name='checked' value={{patient.pid}}>
-        <label><a href="{% url 'manage_show_zip' %}?file={{ patient.pid }}">{{ patient.pid }}</a></label>
+        <label><a href="{% url 'manage_show_zip' %}?file={{ patient.pid }}">{{ patient.pid }}.zip</a></label>
         <span class="badge badge-primary badge-pill ml-3">{{ patient.pub_date }}</span>
       </li>
       {% endfor %}
