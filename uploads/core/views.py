@@ -621,7 +621,7 @@ def manage_show_zip(request):
 def check_apspine(request):
     # need: apspine, lva, frax
     # get the file name user clicked from template
-    pidFolder = request.session['myfile']
+    pidFolder = ''.join(list(request.session['myfile'])[:-4]) # remove '.dcm'
     zipFilePath = 'media/ZIP/' + pidFolder
     strFilePath = zipFilePath + '/SDY00000/'
     response={}
