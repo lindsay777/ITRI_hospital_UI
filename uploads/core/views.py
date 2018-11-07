@@ -92,6 +92,7 @@ def str_data(dataset, saveType):
 
     match = [s for s in comment if "SCAN type" in s]
     length = len(match)
+    print('length', length)
 
     # 02 frax: major fracture
     if length == 0:
@@ -181,13 +182,61 @@ def str_data(dataset, saveType):
                     print('file does not save to DB')
             else:
                 print('error input')
+        # multi scanType: combination
+        elif length == 2:
+            scanType = 'combination'
+            response['scanType'] = scanType
+            print(region)
+            del region[1:-4]
+            combination = ''
+            print('====')
+            print(region)
+            print(tscore)
+            print(zscore)
+            for i in range(len(tscore)):
+                print('combination', combination)
+                if combination == '':
+                    combination += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    combination += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
+            response['combination'] = combination
+            # get APSpine
+            APSpine = ''
+            for i in range(len(tscore)):
+                if APSpine == '':
+                    APSpine += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    APSpine += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
+            response['APSpine'] = APSpine
+            # get DualFemur
+            DualFemur = ''
+            for i in range(len(tscore)):
+                if DualFemur == '':
+                    DualFemur += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
+                else:
+                    DualFemur += ', (' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')' 
+            response['DualFemur'] = DualFemur
+            # # get T7
+            # T7 = [s for s in comment if "DEFORMITY" in s]
+            # T7 = ''.join(T7)
+            # T7 = T7.split('</')[0].split('>')[1]
+            # response['T7'] = T7
+
+            if saveType == 'uploadZIP':
+                # save to DB
+                fileInstance = COMBINATION(pid=pid, scantype=scanType, tscore=tscore, zscore=zscore, region=region, lva='None', apspine=APSpine, dualfemur=DualFemur, combination=combination, t7='None')
+                fileInstance.save()
+            else:
+                print('file does not save to DB')
 
         # multi scanType: combination
         elif length == 3:
             scanType = 'combination'
             response['scanType'] = scanType
-            
-            del region[1:4]
+            print('---')
+            print(region)
+            del region[1:-4] #TODO: zip file with lva
+            print(region)
             combination = ''
             for i in range(len(tscore)):
                 if combination == '':
@@ -458,6 +507,9 @@ def show_zip(request):
     fileName = list(myfile)[:-4] # remove '.zip'
     fileName = ''.join(fileName)
 
+    print('123')
+    print(pid)
+    print(myfile)
     if myfile.startswith('STR'):
         filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
     elif myfile.startswith('IMG'):
