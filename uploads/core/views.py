@@ -98,12 +98,18 @@ def str_data(dataset, saveType):
         response['scanType'] = 'FRAX'
         majorFrac = [s for s in comment if "MAJOR_OSTEO_FRAC_RISK units" in s]
         majorFrac = ''.join(majorFrac)
-        majorFrac = majorFrac.split('</')[0].split('>')[1]
+        if majorFrac == '':
+            majorFrac = '(None)'
+        else:        
+            majorFrac = majorFrac.split('</')[0].split('>')[1]
         response['majorFrac'] = majorFrac
         # get hip frac
         hipFrac = [s for s in comment if "HIP_FRAC_RISK units" in s]
         hipFrac = ''.join(hipFrac)
-        hipFrac = hipFrac.split('</')[0].split('>')[1]
+        if hipFrac == '':
+            hipFrac = '(None)'
+        else:
+            hipFrac = hipFrac.split('</')[0].split('>')[1]
         response['hipFrac'] = hipFrac
 
         if saveType == 'uploadZIP':
@@ -236,7 +242,6 @@ def t_z_r(comment):
     for substring in match_tscore:
         substring = substring.split('</')[0].split('>')[1]
         tscore.append(substring)
-    print(tscore)
     comments['tscore'] = tscore
 
     match_zscore = [s for s in comment if "BMD_ZSCORE" in s]
@@ -244,7 +249,6 @@ def t_z_r(comment):
     for substring in match_zscore:
         substring = substring.split('</')[0].split('>')[1]
         zscore.append(substring)
-    print(zscore)
     comments['zscore'] = zscore
 
     match_region = [s for s in comment if "ROI region" in s]
@@ -259,9 +263,6 @@ def t_z_r(comment):
     comments['str_zscore'] = ', '.join(zscore)
 
     return comments
-
-def read_dcm(dcmFilePath): # get data from DB
-    print('hello')
 
 def main_upload(request):
     return render(request, 'core/main_upload.html')
@@ -294,7 +295,6 @@ def upload_dcm(request):
             data = patient_data(dcmFilePath, 'dcm')
             dataset = data['dataset']
             response.update(data)
-            print(response['dateTime'])
 
             # ----- get image report from IMG file -----  
             # pydicom example: https://goo.gl/SMyny4
@@ -451,9 +451,8 @@ def upload_multi_zip(request):
 
 def show_zip(request):
     response = {}
-    zipFolder = request.session['myfile']
-    pid = request.session['pid']
-
+    zipFile = request.session['myfile']
+    pid = ''.join(list(zipFile[:-4]))
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
     fileName = list(myfile)[:-4] # remove '.zip'
@@ -463,7 +462,6 @@ def show_zip(request):
         filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
     elif myfile.startswith('IMG'):
         filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
-
     # read file
     data = patient_data(filePath, 'zip')
     dataset = data['dataset']
@@ -493,11 +491,9 @@ def manage_dcm(request): #remove
     # remove selected files
     if request.method == 'POST':
         selected = request.POST.getlist('selected')
-        print(selected)
         result = '' 
         response = {}
         for files in selected:
-            print(files)
             os.remove(folderPath + files)
 
             # check if the file has corresponding report, if yes, remove as well  
@@ -563,8 +559,7 @@ def manage_zip(request): #remove
         checked = request.POST.getlist('checked')
         if len(checked) > 1:
             remove(checked, 'multiZIP')
-        else:   #TODO: error
-            print('hi')
+        else:
             remove(checked, 'zip')
         response['result'] = checked
         return render(request, 'core/result.html', response)
@@ -575,7 +570,6 @@ def manage_zip(request): #remove
 
 def manage_show_zip(request): 
     response={}
-    print(request.session['myfile'])
     if request.method == 'POST':    #remove
         remove(request.session['myfile'], 'zip')
         response['result'] = request.session['myfile']
@@ -619,12 +613,13 @@ def manage_show_zip(request):
     return render(request, 'core/manage_show_zip.html', response)
 
 def check_apspine(request):
-    # need: apspine, lva, frax
     # get the file name user clicked from template
     pidFolder = ''.join(list(request.session['myfile'])[:-4]) # remove '.dcm'
     zipFilePath = 'media/ZIP/' + pidFolder
     strFilePath = zipFilePath + '/SDY00000/'
     response={}
+    file_apspine=''
+    file_lva=''
     
     # recognize files through dataset
     # get list of the directory
@@ -647,6 +642,8 @@ def check_apspine(request):
         # no scanType: major fracture
         if length == 0:
             file_frax = files
+            scanType = 'Frax'
+            response['scanType'] = scanType
         
         # at least one scanType:
         else:           
@@ -670,8 +667,13 @@ def check_apspine(request):
             # multi scanType: combination
             else:
                 file_combination = files
+                scanType = 'combination'
+                response['scanType'] = scanType
 
-    #TODO: show which file is not exist
+    # need: apspine, lva, frax
+    if file_apspine=='' or file_lva=='':
+        response['result_warn'] = 'Insufficient file resources.'
+        return render(request, 'core/check_apspine.html', response)
     
     apspineFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_apspine
 
@@ -926,7 +928,6 @@ def remove(myfiles, fileType):
             FRAX.objects.filter(pid=myfile).delete()
             LVA.objects.filter(pid=myfile).delete()
             APSPINE.objects.filter(pid=myfile).delete()
-            print(myfile + 'is deleted')
             # remove from folder
             os.remove('media/ZIP/' + myfile + '.zip')
             shutil.rmtree('media/ZIP/' + myfile)
@@ -939,7 +940,6 @@ def remove(myfiles, fileType):
         FRAX.objects.filter(pid=myfiles).delete()
         LVA.objects.filter(pid=myfiles).delete()
         APSPINE.objects.filter(pid=myfiles).delete()
-        #print(myfiles + 'is deleted')
         # remove from folder
         os.remove('media/ZIP/' + myfiles + '.zip')
         shutil.rmtree('media/ZIP/' + myfiles)
@@ -963,7 +963,6 @@ def download(request):
     # get file type (dcm or zip)
     fileType = list(myfile)[-3:] 
     fileType = ''.join(fileType)
-    print(filePath)
     if request.method == 'POST':
         if os.path.exists(filePath):
             with open(filePath, 'rb') as fh:
