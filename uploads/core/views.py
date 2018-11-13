@@ -505,15 +505,24 @@ def show_zip(request):
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
     fileName = list(myfile)[:-4] # remove '.zip'
-    fileName = ''.join(fileName)
+    fileName = ''.join(fileName)   
 
-    print('123')
     print(pid)
     print(myfile)
     if myfile.startswith('STR'):
         filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
     elif myfile.startswith('IMG'):
         filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
+    else:
+        _file_dir = os.getcwd() + '/media/ZIP/' + pid
+        if fileName in os.listdir(_file_dir):
+            filePath = os.path.join(_file_dir, myfile)
+        else:
+            for path in os.listdir(_file_dir):
+                file_dir = os.path.join(_file_dir, path)
+                if myfile in os.listdir(file_dir):
+                    filePath = os.path.join(file_dir, myfile)
+            
     # read file
     data = patient_data(filePath, 'zip')
     dataset = data['dataset']
@@ -667,15 +676,30 @@ def manage_show_zip(request):
 def check_apspine(request):
     # get the file name user clicked from template
     pidFolder = ''.join(list(request.session['myfile'])[:-4]) # remove '.dcm'
-    zipFilePath = 'media/ZIP/' + pidFolder
-    strFilePath = zipFilePath + '/SDY00000/'
     response={}
     file_apspine=''
     file_lva=''
+    zipFilePath = 'media/ZIP/' + pidFolder       
+    if os.path.isdir(zipFilePath + '/SDY00000/'):
+        strFolderPath = zipFilePath + '/SDY00000/'
+    else:
+        _file_dir = os.getcwd() + '/media/ZIP/' + pidFolder
+        for _path in os.listdir(_file_dir):
+            file_dir = os.path.join(_file_dir, _path)
+            for path in os.listdir(file_dir):
+                filePath = os.path.join(file_dir, path)
+                dataset = pydicom.dcmread(filePath)
+                try:
+                    dataset.ImageComments
+                    strFolderPath = file_dir.replace(os.getcwd(),'')
+                    strFolderPath = ''.join(list(strFolderPath)[1:])
+                    strFolderPath = strFolderPath.replace('\\','/')
+                except:
+                    print('not str dcm file')
     
     # recognize files through dataset
     # get list of the directory
-    onlyFiles = os.listdir(strFilePath)
+    onlyFiles = os.listdir(strFolderPath)
     lstFilesDCM = []
     # get only 'str' files from the list
     for files in onlyFiles:
@@ -683,7 +707,7 @@ def check_apspine(request):
             lstFilesDCM.append(files)
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in lstFilesDCM:
-        filesPath = strFilePath + files
+        filesPath = strFolderPath + files
         dataset = pydicom.dcmread(filesPath)
         comment = dataset.ImageComments
         comment = comment.split('><')
