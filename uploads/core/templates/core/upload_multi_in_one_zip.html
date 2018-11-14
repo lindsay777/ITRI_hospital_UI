@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="input-group mb-3">
+      <div class="custom-file">
+        <input type="file" name="myfile" class="custom-file-input" id="inputGroupFile02" onchange="$('#upload-file-info').html(this.files[0].name)">
+        <label class="custom-file-label" id="upload-file-info" for="inputGroupFile02">Choose single ZIP file containing multiple files to upload</label>
+      </div>
+      <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">Upload</button>
+      </div>
+    </div>
+  </form>
+  multi_in_one
+  {% if warning_origin %}
+    {{ warning_origin }} already exists!!<br>
+    Same as the file {{ warning_pid }}
+  {% endif %}
+
+  {% if uploaded_file_url %}
+    <p>File uploaded success!</p>
+    <p>Uploaded time: {{ dateTime }}</p>
+    <p>New file name: {{ pid }}.zip</p>
+    <p>Original file name: {{ myZipFile }}</p>
+    <li>Directory Tree:</li>
+
+    <blockquote>
+    {% for dir, file in file_dir_list %}
+      {% if '.dcm' in file %}
+        <div>
+          <a href="{% url 'show_zip' %}?file={{file}}">{{ dir }}</a>
+        </div>
+      {% else %}
+        <div>
+          {{ dir }}
+        </div>
+      {% endif %}
+    {% endfor %}
+    </blockquote>
+  {% endif %}
+{% endblock %}
+

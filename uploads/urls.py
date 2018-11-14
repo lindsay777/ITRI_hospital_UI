@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^uploads/uploadDCM/$', views.upload_dcm, name='upload_dcm'),
     url(r'^uploads/uploadZIP/$', views.upload_zip, name='upload_zip'),
     url(r'^uploads/uploadMultiZIP/$', views.upload_multi_zip, name='upload_multi_zip'),
+    url(r'^uploads/uploadMultiInOneZIP/$', views.upload_multi_in_one_zip, name='upload_multi_in_one_zip'),
     url(r'^uploads/showZIP/$', views.show_zip, name='show_zip'),
     url(r'^uploads/mainManage/$', views.main_manage, name='main_manage'),
     url(r'^uploads/manageDCM/$', views.manage_dcm, name='manage_dcm'),

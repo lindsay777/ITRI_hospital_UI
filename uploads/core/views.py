@@ -92,7 +92,6 @@ def str_data(dataset, saveType):
 
     match = [s for s in comment if "SCAN type" in s]
     length = len(match)
-    print('length', length)
 
     # 02 frax: major fracture
     if length == 0:
@@ -186,15 +185,9 @@ def str_data(dataset, saveType):
         elif length == 2:
             scanType = 'combination'
             response['scanType'] = scanType
-            print(region)
             del region[1:-4]
             combination = ''
-            print('====')
-            print(region)
-            print(tscore)
-            print(zscore)
             for i in range(len(tscore)):
-                print('combination', combination)
                 if combination == '':
                     combination += '(' + region[i] + ',' + tscore[i] + ',' + zscore[i] +')'
                 else:
@@ -233,10 +226,7 @@ def str_data(dataset, saveType):
         elif length == 3:
             scanType = 'combination'
             response['scanType'] = scanType
-            print('---')
-            print(region)
             del region[1:-4] #TODO: zip file with lva
-            print(region)
             combination = ''
             for i in range(len(tscore)):
                 if combination == '':
@@ -322,8 +312,7 @@ def upload_dcm(request):
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         myfile = fs.save(myfile.name, myfile)
-        fileName = list(myfile)[:-4] # remove '.dcm'
-        fileName = ''.join(fileName)
+        fileName = ''.join(list(myfile)[:-4])
 
         # get file list in the folder
         onlyfiles = [f for f in listdir('media/DCM/') if isfile(join('media/DCM/', f))]
@@ -392,7 +381,7 @@ def zip_process(myZipFile, zipFolder):
             'warning_pid':pid
         }
     else:
-        # move file form media/ to media/zip/ folder
+        # move file from media/ to media/zip/ folder
         shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
         shutil.move('media/'+zipFolder, 'media/ZIP/'+zipFolder)
         # read each file and save to DB
@@ -486,7 +475,7 @@ def upload_multi_zip(request):
 
             try:
                 data['warning_origin']
-                errorlist.append(data['warning_origin'])          
+                errorlist.append(data['warning_origin'])     
             except:
                 successlist.append(myZipFile)
         response['failed'] = errorlist
@@ -498,6 +487,55 @@ def upload_multi_zip(request):
     else: 
         return render(request, 'core/upload_multi_zip.html')
 
+def upload_multi_in_one_zip(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        start = time.clock()
+        response = {}
+        listFilesZIP = []
+        errorlist = []
+        successlist = []
+
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        myZipFile = fs.save(myfile.name, myfile)
+        zipFolder = ''.join(list(myZipFile[:-4]))
+        print(myZipFile)
+        print(zipFolder)
+
+        # read zip file
+        zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', myZipFile))
+        # extract zip file
+        for file in zip_file.namelist():
+            zip_file.extract(file, os.path.join(os.getcwd(), 'media/'))
+        zip_file.close()
+
+        # get folders
+        extractFolder = 'media/' + zipFolder
+        for folders in os.listdir(extractFolder):
+            listFilesZIP.append(folders)
+
+        for folders in listFilesZIP:
+            data={}
+            myZipFile = fs.save(myfile.name, myfile)
+            # get folder name of the extracted zip file
+            zipFolder = list(myZipFile)[:-4] #remove '.zip'
+            zipFolder = ''.join(zipFolder)
+            data = zip_process(myZipFile, zipFolder)
+
+        #     try:
+        #         data['warning_origin']
+        #         errorlist.append(data['warning_origin'])
+        #     except:
+        #         successlist.append(myZipFile)
+        # response['failed'] = errorlist
+        # response['success'] = successlist
+
+        # response['time'] = time.clock() - start
+        # response['uploaded_file_url'] = fs.url(myZipFile)  
+        return render(request, 'core/upload_multi_in_one_zip.html', response)
+    else: 
+        return render(request, 'core/upload_multi_in_one_zip.html')
+
 def show_zip(request):
     response = {}
     zipFile = request.session['myfile']
@@ -507,8 +545,6 @@ def show_zip(request):
     fileName = list(myfile)[:-4] # remove '.zip'
     fileName = ''.join(fileName)   
 
-    print(pid)
-    print(myfile)
     if myfile.startswith('STR'):
         filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
     elif myfile.startswith('IMG'):
@@ -677,7 +713,7 @@ def check_apspine(request):
     # get the file name user clicked from template
     pidFolder = ''.join(list(request.session['myfile'])[:-4])
     response={}
-    lstFilesDCM = []
+    listFilesDCM = []
     tag = ''
     file_apspine=''
     file_lva=''
@@ -693,7 +729,7 @@ def check_apspine(request):
         # get only 'str' files from the list
         for files in onlyFiles:
             if "STR" in files:
-                lstFilesDCM.append(files)
+                listFilesDCM.append(files)
 
     # if the file has abnormal folder constructure
     else:
@@ -706,7 +742,7 @@ def check_apspine(request):
                 dataset = pydicom.dcmread(filePath)
                 try:
                     dataset.ImageComments
-                    lstFilesDCM.append('/' + path)
+                    listFilesDCM.append('/' + path)
                     strFolderPath = file_dir.replace(os.getcwd(),'')
                     strFolderPath = ''.join(list(strFolderPath)[1:])
                     strFolderPath = strFolderPath.replace('\\','/')
@@ -714,7 +750,7 @@ def check_apspine(request):
                     print('not str dcm file')
     
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
-    for files in lstFilesDCM:
+    for files in listFilesDCM:
         filesPath = strFolderPath + files
         dataset = pydicom.dcmread(filesPath)
         comment = dataset.ImageComments
