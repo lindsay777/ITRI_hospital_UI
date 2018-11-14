@@ -675,14 +675,29 @@ def manage_show_zip(request):
 
 def check_apspine(request):
     # get the file name user clicked from template
-    pidFolder = ''.join(list(request.session['myfile'])[:-4]) # remove '.dcm'
+    pidFolder = ''.join(list(request.session['myfile'])[:-4])
     response={}
+    lstFilesDCM = []
+    tag = ''
     file_apspine=''
     file_lva=''
-    zipFilePath = 'media/ZIP/' + pidFolder       
+    zipFilePath = 'media/ZIP/' + pidFolder
+
+    # if the zip file has normal constructure
     if os.path.isdir(zipFilePath + '/SDY00000/'):
+        tag = 'normal_folder'
         strFolderPath = zipFilePath + '/SDY00000/'
+        # recognize files through dataset
+        # get list of the directory
+        onlyFiles = os.listdir(strFolderPath)
+        # get only 'str' files from the list
+        for files in onlyFiles:
+            if "STR" in files:
+                lstFilesDCM.append(files)
+
+    # if the file has abnormal folder constructure
     else:
+        tag = 'abnormal_folder'
         _file_dir = os.getcwd() + '/media/ZIP/' + pidFolder
         for _path in os.listdir(_file_dir):
             file_dir = os.path.join(_file_dir, _path)
@@ -691,20 +706,13 @@ def check_apspine(request):
                 dataset = pydicom.dcmread(filePath)
                 try:
                     dataset.ImageComments
+                    lstFilesDCM.append('/' + path)
                     strFolderPath = file_dir.replace(os.getcwd(),'')
                     strFolderPath = ''.join(list(strFolderPath)[1:])
                     strFolderPath = strFolderPath.replace('\\','/')
                 except:
                     print('not str dcm file')
     
-    # recognize files through dataset
-    # get list of the directory
-    onlyFiles = os.listdir(strFolderPath)
-    lstFilesDCM = []
-    # get only 'str' files from the list
-    for files in onlyFiles:
-        if "STR" in files:
-            lstFilesDCM.append(files)
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in lstFilesDCM:
         filesPath = strFolderPath + files
@@ -745,13 +753,16 @@ def check_apspine(request):
                 file_combination = files
                 scanType = 'combination'
                 response['scanType'] = scanType
-
+    
     # need: apspine, lva, frax
-    if file_apspine=='' or file_lva=='':
-        response['result_warn'] = 'Insufficient file resources.'
+    if file_apspine=='':
+        response['result_warn'] = 'Insufficient file resources: AP Spine'
         return render(request, 'core/check_apspine.html', response)
     
-    apspineFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_apspine
+    if tag == 'normal_folder':
+        apspineFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_apspine
+    else:
+        apspineFilePath = strFolderPath + file_apspine
 
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
@@ -795,7 +806,6 @@ def check_apspine(request):
             group = 'T'
     response['group'] = group
 
-    # zip
     merge = list(zip(region, tscore, zscore))
 
     # get the outcome from the machine
@@ -861,6 +871,11 @@ def check_apspine(request):
         outcome = str(start + '-' + end + '(' + diffRegion + ')')
     list_outcome = ''.join(list(outcome))
     response['outcome'] = outcome
+
+    # need: apspine, lva, frax
+    if file_lva=='':
+        response['result_warn'] = 'Insufficient file resources: LVA'
+        return render(request, 'core/check_apspine.html', response)
     
     # check the result to determine re-gen or not
     if list_outcome in list_machineOutcome:
@@ -926,7 +941,6 @@ def check_apspine(request):
         return render(request, 'core/check_apspine.html', response)
 
     else:
-        #request.session['reportVar'] = response['group']
         response['result_warn'] = 'Warn!! Please Re-gen.'
 
     return render(request, 'core/check_apspine.html', response)
