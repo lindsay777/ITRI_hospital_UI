@@ -754,7 +754,7 @@ def check_apspine(request):
                 scanType = 'combination'
                 response['scanType'] = scanType
     
-    # need: apspine, lva, frax
+    # step 2: Obtain APspine
     if file_apspine=='':
         response['result_warn'] = 'Insufficient file resources: AP Spine'
         return render(request, 'core/check_apspine.html', response)
@@ -871,17 +871,17 @@ def check_apspine(request):
         outcome = str(start + '-' + end + '(' + diffRegion + ')')
     list_outcome = ''.join(list(outcome))
     response['outcome'] = outcome
-
-    # need: apspine, lva, frax
-    if file_lva=='':
-        response['result_warn'] = 'Insufficient file resources: LVA'
-        return render(request, 'core/check_apspine.html', response)
     
     # check the result to determine re-gen or not
     if list_outcome in list_machineOutcome:
-        response['result_correct'] = 'Correct'
-        # Obtain LVA
-        lvaFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_lva
+        # step 4: Obtain LVA
+        if file_lva=='':
+            response['result_warn'] = 'Insufficient file resources: LVA'
+            return render(request, 'core/check_apspine.html', response)
+        if tag == 'normal_folder':
+            lvaFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_lva
+        else:
+            lvaFilePath = strFolderPath + file_lva
         # read file
         dataset = pydicom.dcmread(lvaFilePath)
         comment = dataset.ImageComments
@@ -912,8 +912,14 @@ def check_apspine(request):
                     lvagrade += ', ' + '(' + substring[0] + ', ' + substring[1] + ')'
         response['grade'] = lvagrade
 
-        # Obtain frax
-        fraxFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_frax
+        # step 4: Obtain FRAX
+        if file_frax=='':
+            response['result_warn'] = 'Insufficient file resources: frax'
+            return render(request, 'core/check_apspine.html', response)
+        if tag == 'normal_folder':
+            fraxFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_frax
+        else:
+            fraxFilePath = strFolderPath + file_frax
         # read file
         dataset = pydicom.dcmread(fraxFilePath)
         comment = dataset.ImageComments
@@ -929,6 +935,8 @@ def check_apspine(request):
         hipFrac = ''.join(hipFrac)
         hipFrac = hipFrac.split('</')[0].split('>')[1]
         response['hipFrac'] = hipFrac
+
+        response['result_correct'] = 'Correct'
 
         #TODO: Object of type 'bytes' is not JSON serializable
         #request.session['reportVar'] = response['group']
