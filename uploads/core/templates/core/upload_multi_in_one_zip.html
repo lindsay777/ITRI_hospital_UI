@@ -15,32 +15,18 @@
       </div>
     </div>
   </form>
-  multi_in_one
-  {% if warning_origin %}
-    {{ warning_origin }} already exists!!<br>
-    Same as the file {{ warning_pid }}
-  {% endif %}
-
+  Please put all the patient folders that you want to upload in a folder, and zip it into a zip file!!
+  <br><br>
   {% if uploaded_file_url %}
-    <p>File uploaded success!</p>
-    <p>Uploaded time: {{ dateTime }}</p>
-    <p>New file name: {{ pid }}.zip</p>
-    <p>Original file name: {{ myZipFile }}</p>
-    <li>Directory Tree:</li>
-
-    <blockquote>
-    {% for dir, file in file_dir_list %}
-      {% if '.dcm' in file %}
-        <div>
-          <a href="{% url 'show_zip' %}?file={{file}}">{{ dir }}</a>
-        </div>
-      {% else %}
-        <div>
-          {{ dir }}
-        </div>
-      {% endif %}
-    {% endfor %}
-    </blockquote>
+    {% if failed %}
+      Failed, files already exist: <br>
+      {{ failed }}<br><br>
+    {% endif %}
+    {% if success %}
+      Uploaded Success: <br>
+      {{ success }}<br><br>
+    {% endif %}
+    <p>Uploaded time: {{ time }}</p>
   {% endif %}
 {% endblock %}
 

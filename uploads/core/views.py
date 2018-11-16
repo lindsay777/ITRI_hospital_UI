@@ -363,10 +363,10 @@ def zip_process(myZipFile, zipFolder):
     # read zip file
     zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', myZipFile))
     # extract zip file
-    for file in zip_file.namelist():
-        zip_file.extract(file, os.path.join(os.getcwd(), 'media/'))
-        if ".dcm" in file.lower():
-            DCMFiles.append(file)
+    for _file in zip_file.namelist():
+        zip_file.extract(_file, os.path.join(os.getcwd(), 'media/'))
+        if ".dcm" in _file.lower():
+            DCMFiles.append(_file)
     zip_file.close()
     
     # if the filename(pid.zip) already exists, show warning
@@ -491,7 +491,7 @@ def upload_multi_in_one_zip(request):
     if request.method == 'POST' and request.FILES['myfile']:
         start = time.clock()
         response = {}
-        listFilesZIP = []
+        listFolder = []
         errorlist = []
         successlist = []
 
@@ -504,34 +504,103 @@ def upload_multi_in_one_zip(request):
 
         # read zip file
         zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', myZipFile))
+        print(zip_file.namelist())
         # extract zip file
-        for file in zip_file.namelist():
-            zip_file.extract(file, os.path.join(os.getcwd(), 'media/'))
+        for _file in zip_file.namelist():
+            zip_file.extract(_file, os.path.join(os.getcwd(), 'media/'))
         zip_file.close()
 
         # get folders
         extractFolder = 'media/' + zipFolder
         for folders in os.listdir(extractFolder):
-            listFilesZIP.append(folders)
+            listFolder.append(folders)
+        print('listFolder', listFolder)
 
-        for folders in listFilesZIP:
-            data={}
-            myZipFile = fs.save(myfile.name, myfile)
-            # get folder name of the extracted zip file
-            zipFolder = list(myZipFile)[:-4] #remove '.zip'
-            zipFolder = ''.join(zipFolder)
-            data = zip_process(myZipFile, zipFolder)
+        onlyfiles = []
+        # get file list in the folder
+        for f in os.listdir('media/ZIP/'):
+            onlyfiles.append(f)
+        print('onlyfiles', onlyfiles)
 
-        #     try:
-        #         data['warning_origin']
-        #         errorlist.append(data['warning_origin'])
-        #     except:
-        #         successlist.append(myZipFile)
-        # response['failed'] = errorlist
-        # response['success'] = successlist
+        DCMFiles = []
+        for _folders in listFolder:
+            DCMFiles = []
+            folders = extractFolder + '/' + _folders
+            print('_folders', _folders)
+            print('folders', folders)
 
-        # response['time'] = time.clock() - start
-        # response['uploaded_file_url'] = fs.url(myZipFile)  
+            # get dataset
+            # if the zip file has normal constructure
+            if os.path.isdir(folders + '/SDY00000/'):
+                tag = 'normal_folder'
+                strFolderPath = folders + '/SDY00000/'
+                for _file in os.listdir(strFolderPath):
+                    print(_file)
+                    if ".dcm" in _file.lower():
+                        DCMFiles.append('/SDY00000/' + _file)
+                pid = pydicom.dcmread(folders + DCMFiles[0]).PatientID
+            # if the file has abnormal folder constructure
+            else:
+                tag = 'abnormal_folder'
+                for _path in os.listdir(folders):
+                    print('_path', _path)
+                    _file_dir = os.path.join(folders, _path)
+                    for path_ in os.listdir(_file_dir):
+                        print('path_', path_)
+                        file_dir = os.path.join(_file_dir, path_)
+                        for path in os.listdir(file_dir):
+                            print('path', path)
+                            filePath = os.path.join(file_dir, path)
+                            dataset = pydicom.dcmread(filePath)
+                            try:
+                                dataset.ImageComments
+                                DCMFiles.append(filePath)
+                            except:
+                                print('not str dcm file')
+                print(_file_dir)
+                print(file_dir)
+                print(filePath)
+                pid = pydicom.dcmread(filePath).PatientID
+
+            print('DCMFiles')
+            print(DCMFiles)
+            print(pid)
+            print('---------------------------------------')
+            # rename from pid
+            if pid in onlyfiles:
+                shutil.rmtree(folders)
+                errorlist.append(_folders)
+            else:
+                # move file from media/ to media/zip/ folder
+                shutil.move('media/'+zipFolder+'/'+_folders, 'media/ZIP/'+_folders)
+                # read each file and save to DB
+                for _file in DCMFiles:
+                    print('_file',_file)
+                    dcmFilePath = 'media/ZIP/' + _folders + _file
+                    dataset = pydicom.dcmread(dcmFilePath)
+                    try:    # get image report from IMG file
+                        dataset.pixel_array
+                        if cv2.imwrite('media/ZIP/JPG/' + _file + '_report.jpg', dataset.pixel_array):
+                            # must add a '/' ahead
+                            response['report'] = '/media/ZIP/JPG/' + _file + '_report.jpg'
+                    except: # get value from STR file
+                        response.update(str_data(dataset, 'uploadZIP'))
+
+                response.update(patient_data(dcmFilePath, 'uploadZIP'))
+                
+                #change filename to pid
+                os.rename('media/ZIP/' + _folders, 'media/ZIP/' + pid)
+
+                successlist.append(_folders)
+                
+        os.remove('media/' + myZipFile)
+        shutil.rmtree('media/' + zipFolder)
+
+        response['failed'] = errorlist
+        response['success'] = successlist
+
+        response['time'] = time.clock() - start
+        response['uploaded_file_url'] = fs.url(myZipFile)  
         return render(request, 'core/upload_multi_in_one_zip.html', response)
     else: 
         return render(request, 'core/upload_multi_in_one_zip.html')
