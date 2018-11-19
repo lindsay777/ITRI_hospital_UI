@@ -108,8 +108,11 @@
 </blockquote>
 {% endif %}
 
-<!-- <br>
+{% if except %}
+<br>
 <h4>Dataset:</h4>
-<pre>{{ dataset }}</pre> -->
+<pre>{{ except }}</pre>
+{% endif %}
+
 
 {% endblock %}

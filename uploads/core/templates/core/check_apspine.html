@@ -81,6 +81,7 @@
       <td>{{ mp }}</td>
     </tr>
   </table>
+  {% if region %}
   <table class="table table-bordered table-hover">
     <tr>
       <th colspan="3" scope="row" style="background-color:#fdf3f8" class="text-center"><h5>DATA GRAB FROM ITRI SYSTEM</h5></th>
@@ -98,6 +99,8 @@
       <td>{{ zscore }}</td>
     </tr>
   </table>
+  {% endif %}
+  {% if group %}
   <table class="table table-bordered table-hover">
     <tr>
       <th colspan="3" scope="row" style="background-color:#f3fdf3" class="text-center"><H5>ANALYZE THROUGH ITRI SYSTEM</H5></th>
@@ -130,6 +133,7 @@
       <td>{{ outcome }}</td>
     </tr>
   </table>
+  {% endif %}
   <br>
 
 {% endblock %}

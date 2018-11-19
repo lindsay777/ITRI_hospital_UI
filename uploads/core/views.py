@@ -21,6 +21,7 @@ import time
 import re
 from datetime import datetime
 from pydicom.data import get_testdata_files
+from decimal import Decimal, getcontext
 
 import io
 from django.http import FileResponse
@@ -35,8 +36,6 @@ from reportlab.pdfgen import canvas
 # session:
 # upload_zip: myZipFile, pid
 # show_dcm/ manage_show_zip: myfile
-
-#TODO: TBS
 
 def home(request):
     return render(request, 'core/home.html')
@@ -226,7 +225,7 @@ def str_data(dataset, saveType):
         elif length == 3:
             scanType = 'combination'
             response['scanType'] = scanType
-            del region[1:-4] #TODO: zip file with lva
+            del region[1:-4]
             combination = ''
             for i in range(len(tscore)):
                 if combination == '':
@@ -334,17 +333,12 @@ def upload_dcm(request):
             dataset = data['dataset']
             response.update(data)
 
-            # ----- get image report from IMG file -----  
-            # pydicom example: https://goo.gl/SMyny4
-            try:
+            try:    # get image report from IMG file
                 dataset.pixel_array
                 if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
                     # must add a '/' ahead
                     response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
-
-            # -------- get value from STR file --------
-            except:   
-                # str_data
+            except: # get value from STR file
                 response.update(str_data(dataset, 'dcm'))
 
             uploaded_file_url = fs.url(myfile)
@@ -382,7 +376,9 @@ def zip_process(myZipFile, zipFolder):
         }
     else:
         # move file from media/ to media/zip/ folder
-        shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+        # shutil.move('media/'+myZipFile, 'media/ZIP/'+myZipFile)
+        # remvoe zip
+        os.remove('media/'+myZipFile)
         shutil.move('media/'+zipFolder, 'media/ZIP/'+zipFolder)
         # read each file and save to DB
         for file in DCMFiles:
@@ -400,10 +396,10 @@ def zip_process(myZipFile, zipFolder):
         response.update(patient_data(dcmFilePath, 'uploadZIP'))
         
         #change filename to pid
-        os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
+        # os.rename('media/ZIP/' + myZipFile, 'media/ZIP/' + response['pid'] + '.zip')
         os.rename('media/ZIP/' + zipFolder, 'media/ZIP/' + response['pid'])
         
-        response['myZipFile'] = myZipFile
+        # response['myZipFile'] = myZipFile
     return response
 
 def upload_zip(request):
@@ -426,7 +422,6 @@ def upload_zip(request):
         else:
             request.session['pid'] = response['pid']
             pidFolder = 'media/ZIP/' + response['pid']
-
             # directory tree
             dir_tree = []
             # contain '.dcm' files 
@@ -499,12 +494,9 @@ def upload_multi_in_one_zip(request):
         fs = FileSystemStorage()
         myZipFile = fs.save(myfile.name, myfile)
         zipFolder = ''.join(list(myZipFile[:-4]))
-        print(myZipFile)
-        print(zipFolder)
 
         # read zip file
         zip_file = zipfile.ZipFile(os.path.join(os.getcwd(), 'media/', myZipFile))
-        print(zip_file.namelist())
         # extract zip file
         for _file in zip_file.namelist():
             zip_file.extract(_file, os.path.join(os.getcwd(), 'media/'))
@@ -514,20 +506,16 @@ def upload_multi_in_one_zip(request):
         extractFolder = 'media/' + zipFolder
         for folders in os.listdir(extractFolder):
             listFolder.append(folders)
-        print('listFolder', listFolder)
 
         onlyfiles = []
         # get file list in the folder
         for f in os.listdir('media/ZIP/'):
             onlyfiles.append(f)
-        print('onlyfiles', onlyfiles)
 
         DCMFiles = []
         for _folders in listFolder:
             DCMFiles = []
             folders = extractFolder + '/' + _folders
-            print('_folders', _folders)
-            print('folders', folders)
 
             # get dataset
             # if the zip file has normal constructure
@@ -535,7 +523,6 @@ def upload_multi_in_one_zip(request):
                 tag = 'normal_folder'
                 strFolderPath = folders + '/SDY00000/'
                 for _file in os.listdir(strFolderPath):
-                    print(_file)
                     if ".dcm" in _file.lower():
                         DCMFiles.append('/SDY00000/' + _file)
                 pid = pydicom.dcmread(folders + DCMFiles[0]).PatientID
@@ -543,29 +530,19 @@ def upload_multi_in_one_zip(request):
             else:
                 tag = 'abnormal_folder'
                 for _path in os.listdir(folders):
-                    print('_path', _path)
-                    _file_dir = os.path.join(folders, _path)
+                    _file_dir = os.path.join(folders, _path) ##
                     for path_ in os.listdir(_file_dir):
-                        print('path_', path_)
                         file_dir = os.path.join(_file_dir, path_)
                         for path in os.listdir(file_dir):
-                            print('path', path)
-                            filePath = os.path.join(file_dir, path)
-                            dataset = pydicom.dcmread(filePath)
+                            filePath = '/'+_path+'/'+path_+'/'+path
+                            dataset = pydicom.dcmread(folders+filePath)
                             try:
                                 dataset.ImageComments
                                 DCMFiles.append(filePath)
                             except:
                                 print('not str dcm file')
-                print(_file_dir)
-                print(file_dir)
-                print(filePath)
-                pid = pydicom.dcmread(filePath).PatientID
+                pid = pydicom.dcmread(folders+'/'+filePath).PatientID
 
-            print('DCMFiles')
-            print(DCMFiles)
-            print(pid)
-            print('---------------------------------------')
             # rename from pid
             if pid in onlyfiles:
                 shutil.rmtree(folders)
@@ -575,7 +552,6 @@ def upload_multi_in_one_zip(request):
                 shutil.move('media/'+zipFolder+'/'+_folders, 'media/ZIP/'+_folders)
                 # read each file and save to DB
                 for _file in DCMFiles:
-                    print('_file',_file)
                     dcmFilePath = 'media/ZIP/' + _folders + _file
                     dataset = pydicom.dcmread(dcmFilePath)
                     try:    # get image report from IMG file
@@ -609,41 +585,61 @@ def show_zip(request):
     response = {}
     zipFile = request.session['myfile']
     pid = ''.join(list(zipFile[:-4]))
+    print(pid)
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
     fileName = list(myfile)[:-4] # remove '.zip'
     fileName = ''.join(fileName)   
+    print(fileName)
 
-    if myfile.startswith('STR'):
-        filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
-    elif myfile.startswith('IMG'):
-        filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
+    # if myfile.startswith('STR'):
+    #     filePath = 'media/ZIP/' + pid + '/SDY00000/' + myfile
+    # elif myfile.startswith('IMG'):
+    #     filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
+    # else:
+    _file_dir = 'media/ZIP/' + pid
+    if fileName in os.listdir(_file_dir):
+        filePath = os.path.join(_file_dir, myfile)
     else:
-        _file_dir = os.getcwd() + '/media/ZIP/' + pid
-        if fileName in os.listdir(_file_dir):
-            filePath = os.path.join(_file_dir, myfile)
-        else:
-            for path in os.listdir(_file_dir):
-                file_dir = os.path.join(_file_dir, path)
-                if myfile in os.listdir(file_dir):
-                    filePath = os.path.join(file_dir, myfile)
-            
+        for _path in os.listdir(_file_dir):
+            file_dir_ = os.path.join(_file_dir, _path)
+            if ''.join(list(_path[-4:])) == '.dcm':
+                if myfile == _path:
+                    filePath = os.path.join(file_dir_, myfile)
+                    break
+            else:
+                for path_ in os.listdir(file_dir_):
+                    file_dir = os.path.join(file_dir_, path_)
+                    if ''.join(list(path_[-4:])) == '.dcm':
+                        if myfile == path_:
+                            filePath = file_dir
+                            break
+                    else:
+                        for _path_ in os.listdir(file_dir):
+                            _file_dir_ = os.path.join(file_dir, _path_)
+                            if ''.join(list(_path_[-4:])) == '.dcm':
+                                if myfile == _path_:
+                                    filePath = _file_dir_
+                                    break
+                            else:
+                                print('not found')
     # read file
     data = patient_data(filePath, 'zip')
     dataset = data['dataset']
     response.update(data)
 
-    # ----- get image report from IMG file -----  
-    # pydicom example: https://goo.gl/SMyny4
-    try:
+    try:    # get image report from IMG file
         dataset.pixel_array
         if cv2.imwrite('media/ZIP/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             # must add a '/' ahead
             response['report'] = '/media/ZIP/JPG/' + fileName + '_report.jpg'
+    except: 
+        try:# get value from STR file
+            dataset.ImageComments
+            response.update(str_data(dataset, 'zip'))
+        except:
+            response['except'] = dataset
 
-    # -------- get value from STR file --------
-    except:
-        response.update(str_data(dataset, 'zip'))
 
     return render(request, 'core/show_zip.html', response)
 
@@ -702,18 +698,12 @@ def show_dcm(request): #remove
     dataset = data['dataset']
     response.update(data)
 
-    # ----- get image report from IMG file -----  
-    # pydicom example: https://goo.gl/SMyny4
-    # if dataset.pixel_array in dataset.dict:
-    try:
+    try:    # get image report from IMG file
         dataset.pixel_array
         if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             # must add a '/' ahead
             response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
-
-    # -------- get value from STR file --------
-    except:
-        # str_data & upload to DB
+    except: # get value from STR file
         response.update(str_data(dataset, 'dcm'))
 
     return render(request, 'core/show_dcm.html', response)
@@ -798,30 +788,38 @@ def check_apspine(request):
         # get only 'str' files from the list
         for files in onlyFiles:
             if "STR" in files:
-                listFilesDCM.append(files)
+                listFilesDCM.append(strFolderPath + files)
 
     # if the file has abnormal folder constructure
     else:
         tag = 'abnormal_folder'
-        _file_dir = os.getcwd() + '/media/ZIP/' + pidFolder
+        _file_dir = 'media/ZIP/' + pidFolder
         for _path in os.listdir(_file_dir):
-            file_dir = os.path.join(_file_dir, _path)
-            for path in os.listdir(file_dir):
-                filePath = os.path.join(file_dir, path)
-                dataset = pydicom.dcmread(filePath)
-                try:
-                    dataset.ImageComments
-                    listFilesDCM.append('/' + path)
-                    strFolderPath = file_dir.replace(os.getcwd(),'')
-                    strFolderPath = ''.join(list(strFolderPath)[1:])
-                    strFolderPath = strFolderPath.replace('\\','/')
-                except:
-                    print('not str dcm file')
+            file_dir_ = os.path.join(_file_dir, _path)   ##
+            for path_ in os.listdir(file_dir_):
+                file_dir = os.path.join(file_dir_, path_)
+                if ''.join(list(path_[-4:])) == '.dcm':
+                    filePath = file_dir
+                    dataset = pydicom.dcmread(filePath)
+                    try:
+                        dataset.ImageComments
+                        listFilesDCM.append(filePath)
+                    except:
+                        print('not str dcm file')
+                else:
+                    for path in os.listdir(file_dir):
+                        if ''.join(list(path[-4:])) == '.dcm':
+                            filePath = os.path.join(file_dir, path)
+                            dataset = pydicom.dcmread(filePath)
+                            try:
+                                dataset.ImageComments
+                                listFilesDCM.append(filePath)
+                            except:
+                                print('not str dcm file')
     
     # browse through each file, search from dataset(scantype), and recognize the information(datatype)
     for files in listFilesDCM:
-        filesPath = strFolderPath + files
-        dataset = pydicom.dcmread(filesPath)
+        dataset = pydicom.dcmread(files)
         comment = dataset.ImageComments
         comment = comment.split('><')
 
@@ -841,18 +839,14 @@ def check_apspine(request):
                 scanType = ''.join(match)
                 scanType = scanType.split('"')[1]
                 response['scanType'] = scanType
-                # LVA
                 if scanType == 'LVA':
                     file_lva = files
-                # AP Spine
                 elif scanType == 'AP Spine':
                     file_apspine = files
-                # Dual Femur
                 elif scanType == 'DualFemur':
                     file_dualfemur = files
                 else:
                     print('error input')
-
             # multi scanType: combination
             else:
                 file_combination = files
@@ -861,21 +855,17 @@ def check_apspine(request):
     
     # step 2: Obtain APspine
     if file_apspine=='':
+        data = patient_data(listFilesDCM[0], 'zip')
+        response.update(data)
         response['result_warn'] = 'Insufficient file resources: AP Spine'
         return render(request, 'core/check_apspine.html', response)
-    
-    if tag == 'normal_folder':
-        apspineFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_apspine
     else:
-        apspineFilePath = strFolderPath + file_apspine
-
+        apspineFilePath = file_apspine
     # read file
     dataset = pydicom.dcmread(apspineFilePath)
 
-    comment = dataset.ImageComments
-    comment = comment.split('><')
+    comment = dataset.ImageComments.split('><')
     comments = t_z_r(comment)
-
     response['region'] = comments['str_region']
     response['tscore'] = comments['str_tscore']
     response['zscore'] = comments['str_zscore']
@@ -890,7 +880,6 @@ def check_apspine(request):
     age = int(data['age'])
     mp = data['mp']
     sex = data['sex']
-
     if age<20:
         group = 'Z'
     elif 20<=age<50:
@@ -934,21 +923,22 @@ def check_apspine(request):
     def getZ(item):
         return float(item[2])
 
+    getcontext().prec = 3
     if group == 'T':
         merge = sorted(merge, key=getT)     
         # get mean and absolute value
-        mean = (float(merge[1][1]) + float(merge[2][1]))/2
-        dist1 = abs(float(merge[0][1]) - mean)
-        dist2 = abs(mean - float(merge[3][1]))
+        mean = (Decimal(merge[1][1]) + Decimal(merge[2][1]))/2
+        dist1 = abs(Decimal(merge[0][1]) - mean)
+        dist2 = abs(mean - Decimal(merge[3][1]))
         response['mean'] = mean
         response['dist1'] = dist1
         response['dist2'] = dist2
     elif group:
         merge = sorted(merge, key=getZ)
         # get mean and absolute value
-        mean = (float(merge[1][2]) + float(merge[2][2]))/2
-        dist1 = abs(float(merge[0][2]) - mean)
-        dist2 = abs(mean - float(merge[3][2]))
+        mean = (Decimal(merge[1][2]) + Decimal(merge[2][2]))/2
+        dist1 = abs(Decimal(merge[0][2]) - mean)
+        dist2 = abs(mean - Decimal(merge[3][2]))
         response['mean'] = mean
         response['dist1'] = dist1
         response['dist2'] = dist2
@@ -983,10 +973,8 @@ def check_apspine(request):
         if file_lva=='':
             response['result_warn'] = 'Insufficient file resources: LVA'
             return render(request, 'core/check_apspine.html', response)
-        if tag == 'normal_folder':
-            lvaFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_lva
         else:
-            lvaFilePath = strFolderPath + file_lva
+            lvaFilePath = file_lva
         # read file
         dataset = pydicom.dcmread(lvaFilePath)
         comment = dataset.ImageComments
@@ -1021,10 +1009,8 @@ def check_apspine(request):
         if file_frax=='':
             response['result_warn'] = 'Insufficient file resources: frax'
             return render(request, 'core/check_apspine.html', response)
-        if tag == 'normal_folder':
-            fraxFilePath = 'media/ZIP/' + pidFolder + '/SDY00000/' + file_frax
         else:
-            fraxFilePath = strFolderPath + file_frax
+            fraxFilePath = file_frax
         # read file
         dataset = pydicom.dcmread(fraxFilePath)
         comment = dataset.ImageComments
@@ -1132,7 +1118,7 @@ def remove(myfiles, fileType):
             LVA.objects.filter(pid=myfile).delete()
             APSPINE.objects.filter(pid=myfile).delete()
             # remove from folder
-            os.remove('media/ZIP/' + myfile + '.zip')
+            #TODO: os.remove('media/ZIP/' + myfile + '.zip')
             shutil.rmtree('media/ZIP/' + myfile)
     elif fileType=='zip':
         myfiles = myfiles[0]
@@ -1144,7 +1130,7 @@ def remove(myfiles, fileType):
         LVA.objects.filter(pid=myfiles).delete()
         APSPINE.objects.filter(pid=myfiles).delete()
         # remove from folder
-        os.remove('media/ZIP/' + myfiles + '.zip')
+        # os.remove('media/ZIP/' + myfiles + '.zip')
         shutil.rmtree('media/ZIP/' + myfiles)
     # if the file is a dcm, remove dcm
     elif fileType=='dcm':
