@@ -339,7 +339,11 @@ def upload_dcm(request):
                     # must add a '/' ahead
                     response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
             except: # get value from STR file
-                response.update(str_data(dataset, 'dcm'))
+                try:# get value from STR file
+                    dataset.ImageComments
+                    response.update(str_data(dataset, 'dcm'))
+                except:
+                    response['except'] = dataset
 
             uploaded_file_url = fs.url(myfile)
             response['uploaded_file_url'] = uploaded_file_url
@@ -391,7 +395,11 @@ def zip_process(myZipFile, zipFolder):
                     # must add a '/' ahead
                     response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
             except: # get value from STR file
-                response.update(str_data(dataset, 'uploadZIP'))
+                try:# get value from STR file
+                    dataset.ImageComments
+                    response.update(str_data(dataset, 'uploadZIP'))
+                except:
+                    response['except'] = dataset   
 
         response.update(patient_data(dcmFilePath, 'uploadZIP'))
         
@@ -409,13 +417,13 @@ def upload_zip(request):
         myfile = request.FILES['myfile']
         fs = FileSystemStorage()
         myZipFile = fs.save(myfile.name, myfile)
-        request.session['myZipFile']=myZipFile
 
         # get folder name of the extracted zip file
         zipFolder = list(myZipFile)[:-4] #remove '.zip'
         zipFolder = ''.join(zipFolder)
 
         response.update(zip_process(myZipFile, zipFolder))
+        request.session['myZipFile']=response['pid']
 
         if 'warning_origin' in response:
             return render(request, 'core/upload_zip.html', response)
@@ -560,7 +568,11 @@ def upload_multi_in_one_zip(request):
                             # must add a '/' ahead
                             response['report'] = '/media/ZIP/JPG/' + _file + '_report.jpg'
                     except: # get value from STR file
-                        response.update(str_data(dataset, 'uploadZIP'))
+                        try:# get value from STR file
+                            dataset.ImageComments
+                            response.update(str_data(dataset, 'uploadZIP'))
+                        except:
+                            response['except'] = dataset
 
                 response.update(patient_data(dcmFilePath, 'uploadZIP'))
                 
@@ -583,8 +595,7 @@ def upload_multi_in_one_zip(request):
 
 def show_zip(request):
     response = {}
-    zipFile = request.session['myfile']
-    pid = ''.join(list(zipFile[:-4]))
+    pid = request.session['myZipFile']
     print(pid)
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
@@ -598,30 +609,53 @@ def show_zip(request):
     #     filePath = 'media/ZIP/' + pid + '/SDY00000/SRS00000/' + myfile
     # else:
     _file_dir = 'media/ZIP/' + pid
+    dir_path = os.getcwd()+'/'+_file_dir
     if fileName in os.listdir(_file_dir):
         filePath = os.path.join(_file_dir, myfile)
     else:
+        # def searchFile(_file_dir):
+        #     for _path in os.listdir(_file_dir):
+        #         file_dir_ = os.path.join(_file_dir, _path)
+        #         if ''.join(list(_path[-4:])) == '.dcm':
+        #             if myfile == _path:
+        #                 filePath = file_dir_
+        #                 return filePath
+        #         else:
+        #             filePath = searchFile(file_dir_)
+        #             return filePath
+
+        # filePath = searchFile(_file_dir)
+        print('myfile',myfile)
         for _path in os.listdir(_file_dir):
-            file_dir_ = os.path.join(_file_dir, _path)
+            print('_path',_path)
+            print(os.path.join(dir_path,_path))
             if ''.join(list(_path[-4:])) == '.dcm':
+                print('1')
                 if myfile == _path:
-                    filePath = os.path.join(file_dir_, myfile)
+                    filePath = os.path.join(_file_dir, _path)
                     break
-            else:
+            elif os.path.isdir(os.path.join(dir_path,_path)):
+                print('2')
+                file_dir_ = os.path.join(_file_dir, _path)
                 for path_ in os.listdir(file_dir_):
-                    file_dir = os.path.join(file_dir_, path_)
+                    print('path_',path_)
                     if ''.join(list(path_[-4:])) == '.dcm':
+                        print('3')
                         if myfile == path_:
-                            filePath = file_dir
+                            filePath = os.path.join(file_dir_, path_)
                             break
-                    else:
+                    elif os.path.isdir(os.path.join(dir_path+'/'+_path, path_)):
+                        print('4')
+                        file_dir = os.path.join(file_dir_, path_)
                         for _path_ in os.listdir(file_dir):
-                            _file_dir_ = os.path.join(file_dir, _path_)
+                            print('_path_',_path_)
                             if ''.join(list(_path_[-4:])) == '.dcm':
+                                print('5')
                                 if myfile == _path_:
-                                    filePath = _file_dir_
+                                    filePath = os.path.join(file_dir, _path_)
                                     break
-                            else:
+                            elif os.path.isdir(os.path.join(dir_path+'/'+_path+'/'+path_,_path_)):
+                                print('6')
                                 print('not found')
     # read file
     data = patient_data(filePath, 'zip')
