@@ -566,7 +566,7 @@ def upload_multi_in_one_zip(request):
                         if cv2.imwrite('media/ZIP/JPG/' + _file + '_report.jpg', dataset.pixel_array):
                             # must add a '/' ahead
                             response['report'] = '/media/ZIP/JPG/' + _file + '_report.jpg'
-                    except: # get value from STR file
+                    except:
                         try:# get value from STR file
                             dataset.ImageComments
                             response.update(str_data(dataset, 'uploadZIP'))
@@ -728,8 +728,12 @@ def show_dcm(request): #remove
         if cv2.imwrite('media/DCM/JPG/' + fileName + '_report.jpg', dataset.pixel_array):
             # must add a '/' ahead
             response['report'] = '/media/DCM/JPG/' + fileName + '_report.jpg'
-    except: # get value from STR file
-        response.update(str_data(dataset, 'dcm'))
+    except: 
+        try:# get value from STR file
+            dataset.ImageComments
+            response.update(str_data(dataset, 'dcm'))
+        except:
+            response['except'] = dataset
 
     return render(request, 'core/show_dcm.html', response)
 
