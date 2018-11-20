@@ -606,47 +606,47 @@ def show_zip(request):
     if fileName in os.listdir(_file_dir):
         filePath = os.path.join(_file_dir, myfile)
     else:
-        def searchFile(_file_dir):
-            print('_file_dir',_file_dir)
-            for _path in os.listdir(_file_dir):
-                _file_dir_ = os.path.join(os.getcwd()+'/'+_file_dir, _path)
-                print('_path',_path)
-                if ''.join(list(_path[-4:])) == '.dcm':
-                    if myfile == _path:
-                        filePath = os.path.join(_file_dir, _path)
-                        filePath = filePath.replace(os.getcwd(),'')
-                        filePath = ''.join(list(filePath[1:]))
-                        print('bingo', filePath)
-                        return filePath
-                elif os.path.isdir(_file_dir_):
-                    print('_file_dir_',_file_dir_)
-                    return searchFile(_file_dir_)
+        # def searchFile(_file_dir):
+        #     print('_file_dir',_file_dir)
+        #     for _path in os.listdir(_file_dir):
+        #         _file_dir_ = os.path.join(os.getcwd()+'/'+_file_dir, _path)
+        #         print('_path',_path)
+        #         if ''.join(list(_path[-4:])) == '.dcm':
+        #             if myfile == _path:
+        #                 filePath = os.path.join(_file_dir, _path)
+        #                 filePath = filePath.replace(os.getcwd(),'')
+        #                 filePath = ''.join(list(filePath[1:]))
+        #                 print('bingo', filePath)
+        #                 return filePath
+        #         elif os.path.isdir(_file_dir_):
+        #             print('_file_dir_',_file_dir_)
+        #             return searchFile(_file_dir_)
 
-        filePath = searchFile(_file_dir)
+        # filePath = searchFile(_file_dir)
 
 
 
-        # for _path in os.listdir(_file_dir):
-        #     if ''.join(list(_path[-4:])) == '.dcm':
-        #         if myfile == _path:
-        #             filePath = os.path.join(_file_dir, _path)
-        #             break
-        #     elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir,_path)):
-        #         file_dir_ = os.path.join(_file_dir, _path)
-        #         for path_ in os.listdir(file_dir_):
-        #             if ''.join(list(path_[-4:])) == '.dcm':
-        #                 if myfile == path_:
-        #                     filePath = os.path.join(file_dir_, path_)
-        #                     break
-        #             elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir+'/'+_path, path_)):
-        #                 file_dir = os.path.join(file_dir_, path_)
-        #                 for _path_ in os.listdir(file_dir):
-        #                     if ''.join(list(_path_[-4:])) == '.dcm':
-        #                         if myfile == _path_:
-        #                             filePath = os.path.join(file_dir, _path_)
-        #                             break
-        #                     elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir+'/'+_path+'/'+path_,_path_)):
-        #                         print('not found')
+        for _path in os.listdir(_file_dir):
+            if ''.join(list(_path[-4:])) == '.dcm':
+                if myfile == _path:
+                    filePath = os.path.join(_file_dir, _path)
+                    break
+            elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir,_path)):
+                file_dir_ = os.path.join(_file_dir, _path)
+                for path_ in os.listdir(file_dir_):
+                    if ''.join(list(path_[-4:])) == '.dcm':
+                        if myfile == path_:
+                            filePath = os.path.join(file_dir_, path_)
+                            break
+                    elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir+'/'+_path, path_)):
+                        file_dir = os.path.join(file_dir_, path_)
+                        for _path_ in os.listdir(file_dir):
+                            if ''.join(list(_path_[-4:])) == '.dcm':
+                                if myfile == _path_:
+                                    filePath = os.path.join(file_dir, _path_)
+                                    break
+                            elif os.path.isdir(os.path.join(os.getcwd()+'/'+_file_dir+'/'+_path+'/'+path_,_path_)):
+                                print('not found')
 
     # read file
     data = patient_data(filePath, 'zip')
@@ -752,13 +752,13 @@ def manage_zip(request): #remove
 def manage_show_zip(request): 
     response={}
     if request.method == 'POST':    #remove
-        remove(request.session['myfile'], 'zip')
-        response['result'] = request.session['myfile']
+        remove(request.session['myZipFile'], 'zip')
+        response['result'] = request.session['myZipFile']
         return render(request, 'core/result.html', response)
 
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
-    request.session['myfile'] = myfile + '.zip'
+    request.session['myZipFile'] = myfile
     zipFilePath = 'media/ZIP/' + myfile
     request.session['filePath'] = zipFilePath + '.zip'
     
