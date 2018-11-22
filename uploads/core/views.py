@@ -355,7 +355,9 @@ def upload_dcm(request):
 def zip_process(myZipFile, zipFolder):
     response={}
     # get file list in the folder
-    onlyfiles = [f for f in listdir('media/ZIP/') if isfile(join('media/ZIP/', f))]
+    onlyfiles = [f for f in listdir(os.getcwd()+'/media/ZIP/') if isfile(join(os.getcwd()+'/media/ZIP/', f))]
+    
+    print('onlyfiles', onlyfiles)
 
     DCMFiles = []
     # read zip file
@@ -393,7 +395,7 @@ def zip_process(myZipFile, zipFolder):
                 if cv2.imwrite('media/ZIP/JPG/' + file + '_report.jpg', dataset.pixel_array):
                     # must add a '/' ahead
                     response['report'] = '/media/ZIP/JPG/' + file + '_report.jpg'
-            except: # get value from STR file
+            except:
                 try:# get value from STR file
                     dataset.ImageComments
                     response.update(str_data(dataset, 'uploadZIP'))
@@ -422,12 +424,12 @@ def upload_zip(request):
         zipFolder = ''.join(zipFolder)
 
         response.update(zip_process(myZipFile, zipFolder))
-        request.session['myZipFile']=response['pid']
+        request.session['myfile']=response['pid']
 
         if 'warning_origin' in response:
             return render(request, 'core/upload_zip.html', response)
         else:
-            request.session['pid'] = response['pid']
+            request.session['myfile'] = response['pid']
             pidFolder = 'media/ZIP/' + response['pid']
             # directory tree
             dir_tree = []
@@ -594,7 +596,7 @@ def upload_multi_in_one_zip(request):
 
 def show_zip(request):
     response = {}
-    pid = request.session['myZipFile']
+    pid = request.session['myfile']
     print(pid)
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
@@ -709,14 +711,14 @@ def show_dcm(request): #remove
 
     # get the file user clicked from template
     myfile = request.GET.get('file', None)
-    request.session['myfile'] = myfile    
+    #request.session['myfile'] = myfile    
 
     fileName = list(myfile)[:-4] # remove '.dcm'
     fileName = ''.join(fileName)
 
     # filePath preprocess
     filePath = 'media/DCM/' + myfile
-    request.session['filePath'] = filePath
+    #request.session['filePath'] = filePath
 
     # patient_data & upload to DB
     data = patient_data(filePath, 'dcm')
@@ -756,13 +758,13 @@ def manage_zip(request): #remove
 def manage_show_zip(request): 
     response={}
     if request.method == 'POST':    #remove
-        remove(request.session['myZipFile'], 'zip')
-        response['result'] = request.session['myZipFile']
+        remove(request.session['myfile'], 'zip')
+        response['result'] = request.session['myfile']
         return render(request, 'core/result.html', response)
 
     # get the file name user clicked from template
     myfile = request.GET.get('file', None)
-    request.session['myZipFile'] = myfile
+    request.session['myfile'] = myfile
     zipFilePath = 'media/ZIP/' + myfile
     request.session['filePath'] = zipFilePath + '.zip'
     
@@ -799,7 +801,7 @@ def manage_show_zip(request):
 
 def check_apspine(request):
     # get the file name user clicked from template
-    pidFolder = ''.join(list(request.session['myfile'])[:-4])
+    pidFolder = request.session['myfile']
     response={}
     listFilesDCM = []
     tag = ''
