@@ -355,7 +355,8 @@ def upload_dcm(request):
 def zip_process(myZipFile, zipFolder):
     response={}
     # get file list in the folder
-    onlyfiles = [f for f in listdir(os.getcwd()+'/media/ZIP/') if isfile(join(os.getcwd()+'/media/ZIP/', f))]
+    print(listdir('media/ZIP/'))
+    onlyfiles = [f for f in listdir('media/ZIP/') if os.path.isdir(os.path.join('media/ZIP/', f))]
     
     print('onlyfiles', onlyfiles)
 
