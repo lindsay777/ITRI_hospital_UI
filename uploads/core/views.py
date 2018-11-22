@@ -1153,7 +1153,7 @@ def remove(myfiles, fileType):
             #TODO: os.remove('media/ZIP/' + myfile + '.zip')
             shutil.rmtree('media/ZIP/' + myfile)
     elif fileType=='zip':
-        myfiles = myfiles[0]
+        #myfiles = myfiles[0]
         # remove from DB
         PATIENT.objects.filter(pid=myfiles).delete()
         COMBINATION.objects.filter(pid=myfiles).delete()
@@ -1177,21 +1177,30 @@ def remove(myfiles, fileType):
         print('Wrong File Type!!!')
 
 def download(request):
+    print('download me')
     # get file path from show_DCM/manage_show_zip
     filePath = request.session['filePath']
+    print('filePath', filePath)
     # get file name from show_DCM/manage_show_zip
     myfile = request.session['myfile']
+    print('myfile', myfile)
     # get file type (dcm or zip)
-    fileType = list(myfile)[-3:] 
-    fileType = ''.join(fileType)
+    fileType = ''.join(list(myfile)[-3:])
     if request.method == 'POST':
+        print('hihi')
         if os.path.exists(filePath):
+            print('789')
             with open(filePath, 'rb') as fh:
                 response = HttpResponse(fh.read(), content_type="application/dicom")
                 response['Content-Disposition'] = 'inline; filename=' + os.path.basename(filePath)
+                print(response)
                 return response
         else:
             if fileType.startswith('dcm'):
+                print('123')
                 return render(request, 'core/show_dcm.html')
-            elif fileType.startswith('zip'):
+            else:
+                print('456')
                 return render(request, 'core/manage_show_zip.html')
+            # else:
+            #     print(fileType)
